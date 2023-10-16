@@ -1,0 +1,16 @@
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/NIP46Method.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/impl/Describe.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/SessionManager.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/impl/Connect.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/Session.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/IMethod.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/impl/SignEvent.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/Parameter.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/module-info.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/ConnectionManager.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/Request.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/impl/Disconnect.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/impl/GetPublicKey.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/Method.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/IParameter.java
+/home/eric/IdeaProjects/si4n6r-lib/si4n6r-core/src/main/java/nostr/si4n6r/core/Response.java
