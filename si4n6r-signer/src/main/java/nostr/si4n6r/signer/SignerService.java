@@ -10,14 +10,27 @@ import nostr.base.ISignable;
 import nostr.base.PublicKey;
 import nostr.event.impl.GenericEvent;
 import nostr.id.Identity;
-import nostr.si4n6r.core.*;
-import nostr.si4n6r.core.impl.*;
+import nostr.si4n6r.core.ConnectionManager;
+import nostr.si4n6r.core.IMethod;
+import nostr.si4n6r.core.Request;
+import nostr.si4n6r.core.Response;
+import nostr.si4n6r.core.Session;
+import nostr.si4n6r.core.SessionManager;
+import nostr.si4n6r.core.impl.Connect;
+import nostr.si4n6r.core.impl.Describe;
+import nostr.si4n6r.core.impl.Disconnect;
+import nostr.si4n6r.core.impl.GetPublicKey;
+import nostr.si4n6r.core.impl.SignEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-import static nostr.si4n6r.core.IMethod.Constants.*;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_DESCRIBE;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_DISCONNECT;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_GET_PUBLIC_KEY;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_SIGN_EVENT;
 
 @Data
 @Log
@@ -42,7 +55,31 @@ public class SignerService {
         return instance;
     }
 
+    /**
+     * Signer-initiated connection to an application.
+     * @param app the application to connect to
+     */
+    public void connect(@NonNull PublicKey app) {
+        IMethod<String> connect = new Connect(app);
+        var request = new Request(connect, app);
+        request.setSessionId(sessionManager.createSession(app).getId());
+
+        List<String> params = new ArrayList<>();
+        params.add(app.toString());
+
+        log.log(Level.INFO, "Submitting request {0}", request);
+        var event = NIP46.createRequestEvent(new NIP46.NIP46Request(request.getId(), METHOD_CONNECT, params, request.getSessionId()), signer.getIdentity(), app);
+
+        Nostr.sign(signer.getIdentity(), event);
+        Nostr.send(event);
+    }
+
     // TODO - Does not need to be public. Package protected?
+
+    /**
+     * Handling app-initiated requests and submit a corresponding response back.
+     * @param request the request to handle and respond to.
+     */
     public void handle(@NonNull Request request) {
 
         log.log(Level.INFO, "Handling {0}", request);

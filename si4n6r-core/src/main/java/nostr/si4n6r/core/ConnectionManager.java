@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 
+// TODO - This is not needed anymore, now that we have the session manager. Remove?
 @Data
 @Log
 public class ConnectionManager {

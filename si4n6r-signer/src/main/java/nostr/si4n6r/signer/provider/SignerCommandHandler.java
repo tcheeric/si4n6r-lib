@@ -55,7 +55,6 @@ public class SignerCommandHandler implements ICommandHandler {
         var recipient = Util.getEventRecipient(event); // Signer
 
         // TODO - Also make sure the public key is a registered/known pubkey, and ignore all other pubkeys
-        // TODO - Refactor, ugly
         log.log(Level.FINE, "Recipient: {0} - Signer: {1}", new Object[]{recipient, signer.getIdentity().getPublicKey()});
         if (event.getKind() == 24133 && recipient.equals(signer.getIdentity().getPublicKey())) {
             log.log(Level.INFO, "Processing event {0}", event);
