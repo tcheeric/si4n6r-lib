@@ -3,6 +3,7 @@ package nostr.si4n6r.core;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
+import lombok.ToString;
 import lombok.extern.java.Log;
 
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ public abstract class Method<U> implements IMethod<U> {
     }
 
     @Override
+    @ToString.Include
     public String getName() {
         return getNIP46MethodName(getClass());
     }

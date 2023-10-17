@@ -58,7 +58,7 @@ public class SignerService {
             }
         }
 
-        if(this.connectionManager.isConnected(app) && null == request.getSessionId()) {
+        if (this.connectionManager.isConnected(app) && null == request.getSessionId()) {
             log.log(Level.WARNING, "Invalid session id {0} for {1}. Disconnecting...", new Object[]{request.getSessionId(), app});
             disconnect(app, session);
         }
@@ -72,28 +72,28 @@ public class SignerService {
                 if (method instanceof Describe describe && this.connectionManager.isConnected(app)) {
                     describe(describe);
                     response = new Response(request.getId(), METHOD_DESCRIBE, describe.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), IMethod.Constants.METHOD_DESCRIBE, response.getResult().toString()), sender, app);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DESCRIBE, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_DISCONNECT -> {
                 if (method instanceof Disconnect disconnect && this.connectionManager.isConnected(app)) {
                     disconnect(disconnect, app);
                     response = new Response(request.getId(), METHOD_CONNECT, disconnect.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DISCONNECT, response.getResult().toString()), sender, app);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DISCONNECT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_CONNECT -> {
                 if (method instanceof Connect connect && this.connectionManager.isDisconnected(app)) {
                     connect(connect, app);
                     response = new Response(request.getId(), METHOD_CONNECT, connect.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_CONNECT, response.getResult().toString()), sender, app);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_CONNECT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_GET_PUBLIC_KEY -> {
                 if (method instanceof GetPublicKey getPublicKey && this.connectionManager.isConnected(app)) {
                     getPublicKey.setResult(Identity.getInstance().getPublicKey());
                     response = new Response(request.getId(), METHOD_GET_PUBLIC_KEY, getPublicKey.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_GET_PUBLIC_KEY, IMethod.Constants.METHOD_DESCRIBE, response.getResult().toString(), response.getSessionId()), sender, app);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_GET_PUBLIC_KEY, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_SIGN_EVENT -> {
@@ -102,7 +102,7 @@ public class SignerService {
                     Nostr.sign((ISignable) paramEvent);
                     signEvent.setResult(paramEvent);
                     response = new Response(request.getId(), METHOD_SIGN_EVENT, signEvent.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_SIGN_EVENT, IMethod.Constants.METHOD_DESCRIBE, response.getResult().toString(), response.getSessionId()), sender, app);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_SIGN_EVENT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             default -> throw new RuntimeException("Invalid request: " + request);

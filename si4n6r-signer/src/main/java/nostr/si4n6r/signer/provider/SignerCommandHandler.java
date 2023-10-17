@@ -4,6 +4,7 @@ import lombok.extern.java.Log;
 import nostr.api.NIP04;
 import nostr.api.NIP46;
 import nostr.base.Relay;
+import nostr.si4n6r.core.IMethod;
 import nostr.si4n6r.core.Session;
 import nostr.si4n6r.core.SessionManager;
 import nostr.si4n6r.signer.Signer;
@@ -65,16 +66,24 @@ public class SignerCommandHandler implements ICommandHandler {
             } catch (NostrException e) {
                 throw new RuntimeException(e);
             }
-            log.log(Level.FINE, "Content: {0}", content);
+            log.log(Level.INFO, "Content: {0}", content);
 
             if (content != null) {
                 var nip46Request = NIP46.NIP46Request.fromString(content);
                 var request = toRequest(nip46Request, app);
                 var sessionManager = SessionManager.getInstance();
-                var service = SignerService.getInstance();
+
+                log.log(Level.INFO, "Request: {0}", request);
+                log.log(Level.INFO, "Method: {0}", request.getMethod().getName());
+                var createSessionFlag = IMethod.Constants.METHOD_CONNECT.equals(request.getMethod().getName());
+
+                if (createSessionFlag) {
+                    sessionManager.createSession(app);
+                }
 
                 try {
                     sessionManager.addRequest(request, app);
+                    var service = SignerService.getInstance();
                     service.handle(request);
                 } catch (Session.SessionTimeoutException e) {
                     throw new RuntimeException(e);

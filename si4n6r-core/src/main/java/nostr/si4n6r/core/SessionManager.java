@@ -30,7 +30,6 @@ public class SessionManager {
     }
 
     public void addRequest(@NonNull Request request, @NonNull PublicKey publicKey) throws Session.SessionTimeoutException {
-        checkTimeout(publicKey);
 
         var session = getSession(publicKey);
         var requests = session.getRequests();
@@ -39,13 +38,19 @@ public class SessionManager {
             return;
         }
 
-        log.log(Level.FINER, "Adding request {0} to session {1}", new Object[]{request, session.getId()});
+        log.log(Level.INFO, "Linking request {0} to session {1}", new Object[]{request, session.getId()});
         session.setLastUpdate(new Date());
         requests.add(request);
+        request.setSessionId(session.getId());
+    }
+
+    public Session createSession(@NonNull PublicKey publicKey) {
+        var session = Session.getInstance(publicKey);
+        addSession(session);
+        return session;
     }
 
     public void addResponse(@NonNull Response response, @NonNull PublicKey publicKey) throws Session.SessionTimeoutException {
-        checkTimeout(publicKey);
 
         var session = getSession(publicKey);
         var responses = session.getResponses();
@@ -95,7 +100,6 @@ public class SessionManager {
     }
 
     boolean hasTimedOut(@NonNull PublicKey publicKey) {
-
         Session session;
 
         try {

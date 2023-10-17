@@ -79,5 +79,9 @@ public class Session {
         public SessionTimeoutException(@NonNull Session session) {
             super("Session " + session.getId() + " timed out!");
         }
+
+        public SessionTimeoutException(@NonNull String message) {
+            super(message);
+        }
     }
 }
