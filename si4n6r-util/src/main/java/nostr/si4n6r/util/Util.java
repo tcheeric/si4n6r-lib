@@ -7,9 +7,9 @@ import nostr.event.impl.GenericEvent;
 import nostr.event.json.codec.GenericEventDecoder;
 import nostr.event.tag.PubKeyTag;
 import nostr.si4n6r.core.IMethod;
-import nostr.si4n6r.core.Request;
-import nostr.si4n6r.core.Response;
-import nostr.si4n6r.core.impl.*;
+import nostr.si4n6r.core.impl.Request;
+import nostr.si4n6r.core.impl.Response;
+import nostr.si4n6r.core.impl.methods.*;
 
 import java.util.List;
 

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.extern.java.Log;
+import nostr.si4n6r.core.impl.Parameter;
 
 import java.util.ArrayList;
 import java.util.List;

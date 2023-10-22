@@ -1,4 +1,4 @@
-package nostr.si4n6r.core;
+package nostr.si4n6r.core.impl;
 
 import lombok.Data;
 import lombok.NonNull;
@@ -13,6 +13,7 @@ import java.util.logging.Level;
 // TODO - This is not needed anymore, now that we have the session manager. Remove?
 @Data
 @Log
+@Deprecated(forRemoval = true)
 public class ConnectionManager {
 
     private final List<Connection> connections;

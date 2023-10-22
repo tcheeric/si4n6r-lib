@@ -1,4 +1,4 @@
-package nostr.si4n6r.core;
+package nostr.si4n6r.core.impl;
 
 import lombok.Data;
 import lombok.NonNull;
@@ -29,12 +29,24 @@ public class SessionManager {
         return instance;
     }
 
+    public Session createSession(@NonNull PublicKey publicKey) {
+        var session = Session.getInstance(publicKey);
+        addSession(session);
+        return session;
+    }
+
     public void addRequest(@NonNull Request request, @NonNull PublicKey publicKey) throws Session.SessionTimeoutException {
 
         var session = getSession(publicKey);
+
+        if (session.hasTimedOut()) {
+            throw new Session.SessionTimeoutException(session);
+        }
+
         var requests = session.getRequests();
 
         if (requests.contains(request)) {
+            log.log(Level.WARNING, "The request {0} is already in the session. Ignoring....");
             return;
         }
 
@@ -42,12 +54,6 @@ public class SessionManager {
         session.setLastUpdate(new Date());
         requests.add(request);
         request.setSessionId(session.getId());
-    }
-
-    public Session createSession(@NonNull PublicKey publicKey) {
-        var session = Session.getInstance(publicKey);
-        addSession(session);
-        return session;
     }
 
     public void addResponse(@NonNull Response response, @NonNull PublicKey publicKey) throws Session.SessionTimeoutException {
@@ -81,15 +87,29 @@ public class SessionManager {
         return true;
     }
 
+    public boolean addSession(@NonNull PublicKey publicKey) {
+        var session = Session.getInstance(publicKey);
+        return addSession(session);
+    }
+
     public boolean removeSession(@NonNull Session session) {
         if (!this.sessions.contains(session)) {
             return false;
         }
-        if (hasTimedOut(session.getPublicKey())) {
+        if (session.hasTimedOut()) {
             this.sessions.remove(session);
             return true;
         }
         return false;
+    }
+
+    public boolean removeSession(@NonNull PublicKey publicKey) {
+        try {
+            var session = getSession(publicKey);
+            return this.removeSession(session);
+        } catch (RuntimeException ex) {
+            return false;
+        }
     }
 
     public Session getSession(@NonNull PublicKey publicKey) {
@@ -98,6 +118,15 @@ public class SessionManager {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Session not found!"));
     }
+
+    public boolean hasActiveSession(@NonNull PublicKey publicKey) {
+        var optSession = sessions.stream()
+                .filter(session -> session.getPublicKey().equals(publicKey) && !session.hasTimedOut())
+                .findFirst();
+
+        return optSession.isPresent();
+    }
+
 
     boolean hasTimedOut(@NonNull PublicKey publicKey) {
         Session session;
@@ -108,23 +137,6 @@ public class SessionManager {
             return true;
         }
 
-        if (session.getInactivityTimeout() == -1 || session.getDuration() == -1) {
-            return false;
-        }
-
-        return (new Date().getTime() - session.getLastUpdate().getTime() > session.getInactivityTimeout()) ||
-                (new Date().getTime() - session.getDate().getTime() > session.getDuration());
-    }
-
-    private void checkTimeout(@NonNull PublicKey publicKey) throws Session.SessionTimeoutException {
-
-        var session = getSession(publicKey);
-
-        if (session.getLastUpdate() == null) {
-            return;
-        }
-        if (hasTimedOut(publicKey)) {
-            throw new Session.SessionTimeoutException(session);
-        }
+        return session.hasTimedOut();
     }
 }

@@ -1,14 +1,16 @@
-package nostr.si4n6r.core.impl;
+package nostr.si4n6r.core.impl.methods;
 
 import nostr.api.NIP01;
 import nostr.base.PublicKey;
 import nostr.event.impl.GenericEvent;
 import nostr.si4n6r.core.IMethod;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Tag("nip-46 methods")
 public class MethodTest {
 
     @Test

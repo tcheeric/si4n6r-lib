@@ -1,4 +1,4 @@
-package nostr.si4n6r.core.impl;
+package nostr.si4n6r.core.impl.methods;
 
 import lombok.NonNull;
 import nostr.base.PublicKey;

@@ -1,9 +1,10 @@
-package nostr.si4n6r.core;
+package nostr.si4n6r.core.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 import nostr.base.PublicKey;
+import nostr.si4n6r.core.IMethod;
 
 import java.util.UUID;
 
@@ -17,7 +18,7 @@ public class Request {
     private String sessionId;
 
     public Request(@NonNull IMethod method) {
-        this(UUID.randomUUID().toString(), (PublicKey) method.getParameter("pubkey"), method, null);
+        this(UUID.randomUUID().toString(), (PublicKey) method.getParameter("pubkey").get(), method, null);
     }
 
     public Request(@NonNull IMethod method, @NonNull PublicKey app) {

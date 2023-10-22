@@ -1,4 +1,4 @@
-package nostr.si4n6r.core;
+package nostr.si4n6r.core.impl;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -73,6 +73,15 @@ public class Session {
             instance = new Session(publicKey, timeout, duration);
         }
         return instance;
+    }
+
+    public boolean hasTimedOut() {
+        if (this.getInactivityTimeout() == -1 || this.getDuration() == -1) {
+            return false;
+        }
+
+        return (new Date().getTime() - this.getLastUpdate().getTime() > this.getInactivityTimeout()) ||
+                (new Date().getTime() - this.getDate().getTime() > this.getDuration());
     }
 
     public static class SessionTimeoutException extends Exception {

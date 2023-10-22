@@ -1,4 +1,4 @@
-package nostr.si4n6r.core;
+package nostr.si4n6r.core.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

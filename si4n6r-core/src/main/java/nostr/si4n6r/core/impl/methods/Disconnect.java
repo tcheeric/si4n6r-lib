@@ -1,4 +1,4 @@
-package nostr.si4n6r.core.impl;
+package nostr.si4n6r.core.impl.methods;
 
 import nostr.si4n6r.core.Method;
 import nostr.si4n6r.core.NIP46Method;

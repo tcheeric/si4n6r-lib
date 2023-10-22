@@ -1,7 +1,8 @@
-package nostr.si4n6r.core;
+package nostr.si4n6r.core.impl;
 
 import lombok.Data;
 import lombok.NonNull;
+import nostr.si4n6r.core.IParameter;
 
 @Data
 public class Parameter implements IParameter {
