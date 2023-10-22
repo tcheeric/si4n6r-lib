@@ -35,14 +35,12 @@ import static nostr.si4n6r.core.IMethod.Constants.METHOD_SIGN_EVENT;
 public class SignerService {
 
     private final Signer signer;
-    //private final ConnectionManager connectionManager;
     private final SessionManager sessionManager;
 
     private static SignerService instance;
 
     private SignerService() {
         this.signer = Signer.getInstance();
-        //this.connectionManager = ConnectionManager.getInstance();
         this.sessionManager = SessionManager.getInstance();
     }
 
