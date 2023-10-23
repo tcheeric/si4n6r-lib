@@ -20,32 +20,22 @@ import java.util.logging.Level;
 public class Session {
 
     private final static int FIVE_MINUTES = 60 * 5 * 1000;
-    private final static int TEN_MINUTES = 60 * 10 * 1000;
-
     public final static int DEFAULT_INACTIVITY_TIMEOUT = FIVE_MINUTES;
+    private final static int TEN_MINUTES = 60 * 10 * 1000;
     public final static int DEFAULT_DURATION = TEN_MINUTES;
-
-    private String id;
-
+    private static Session instance;
     private final PublicKey publicKey;
-
-    @ToString.Exclude
-    private Date date;
-
-    @ToString.Exclude
-    private Date lastUpdate;
-
-    private int inactivityTimeout;
-
-    private int duration;
-
     @ToString.Exclude
     private final List<Request> requests;
-
     @ToString.Exclude
     private final List<Response> responses;
-
-    private static Session instance;
+    private String id;
+    @ToString.Exclude
+    private Date date;
+    @ToString.Exclude
+    private Date lastUpdate;
+    private int inactivityTimeout;
+    private int duration;
 
     private Session(@NonNull PublicKey publicKey) {
         this(publicKey, FIVE_MINUTES, TEN_MINUTES);

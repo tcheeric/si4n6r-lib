@@ -51,7 +51,7 @@ public class Util {
                 return new Describe();
             }
             case METHOD_GET_PUBLIC_KEY -> {
-                assert (params.size() == 0);
+                assert (params.isEmpty());
                 return new GetPublicKey();
             }
             case METHOD_SIGN_EVENT -> {

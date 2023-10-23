@@ -21,5 +21,5 @@ public class Parameter implements IParameter {
     @Override
     public Object get() {
         return getValue();
-    }    
+    }
 }

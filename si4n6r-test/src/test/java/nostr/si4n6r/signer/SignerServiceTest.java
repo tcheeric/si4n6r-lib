@@ -1,6 +1,5 @@
 package nostr.si4n6r.signer;
 
-import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.id.Identity;
 import nostr.si4n6r.core.IMethod;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 

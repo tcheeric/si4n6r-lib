@@ -1,6 +1,5 @@
 package nostr.si4n6r.core.impl.methods;
 
-import lombok.NonNull;
 import nostr.base.PublicKey;
 import nostr.si4n6r.core.Method;
 import nostr.si4n6r.core.NIP46Method;

@@ -14,9 +14,8 @@ import java.util.logging.Level;
 @Log
 public class SessionManager {
 
-    private final List<Session> sessions;
-
     private static SessionManager instance;
+    private final List<Session> sessions;
 
     private SessionManager() {
         this.sessions = new ArrayList<>();
@@ -56,7 +55,7 @@ public class SessionManager {
         request.setSessionId(session.getId());
     }
 
-    public void addResponse(@NonNull Response response, @NonNull PublicKey publicKey) throws Session.SessionTimeoutException {
+    public void addResponse(@NonNull Response response, @NonNull PublicKey publicKey) {
 
         var session = getSession(publicKey);
         var responses = session.getResponses();

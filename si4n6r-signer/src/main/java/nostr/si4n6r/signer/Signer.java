@@ -9,9 +9,9 @@ import nostr.id.CustomIdentity;
 @Data
 public class Signer {
 
+    private static Signer instance;
     private final Relay relay;
     private final CustomIdentity identity;
-    private static Signer instance;
 
     private Signer() {
         this.relay = Client.getInstance().getDefaultRelay();

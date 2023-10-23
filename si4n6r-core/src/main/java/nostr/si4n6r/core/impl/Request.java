@@ -10,20 +10,14 @@ import java.util.UUID;
 
 @Data
 @AllArgsConstructor
-public class Request {
+public class Request<T> {
 
     private final String id;
     private final PublicKey app;
-    private final IMethod method;
+    private final IMethod<T> method;
     private String sessionId;
 
-/*
-    public Request(@NonNull IMethod method) {
-        this(UUID.randomUUID().toString(), (PublicKey) method.getParameter("pubkey").get(), method, null);
-    }
-*/
-
-    public Request(@NonNull IMethod method, @NonNull PublicKey app) {
+    public Request(@NonNull IMethod<T> method, @NonNull PublicKey app) {
         this(UUID.randomUUID().toString(), app, method, null);
     }
 }

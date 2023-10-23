@@ -15,30 +15,21 @@ import nostr.si4n6r.core.impl.Request;
 import nostr.si4n6r.core.impl.Response;
 import nostr.si4n6r.core.impl.Session;
 import nostr.si4n6r.core.impl.SessionManager;
-import nostr.si4n6r.core.impl.methods.Connect;
-import nostr.si4n6r.core.impl.methods.Describe;
-import nostr.si4n6r.core.impl.methods.Disconnect;
-import nostr.si4n6r.core.impl.methods.GetPublicKey;
-import nostr.si4n6r.core.impl.methods.SignEvent;
+import nostr.si4n6r.core.impl.methods.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DESCRIBE;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DISCONNECT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_GET_PUBLIC_KEY;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_SIGN_EVENT;
+import static nostr.si4n6r.core.IMethod.Constants.*;
 
 @Data
 @Log
 public class SignerService {
 
+    private static SignerService instance;
     private final Signer signer;
     private final SessionManager sessionManager;
-
-    private static SignerService instance;
 
     private SignerService() {
         this.signer = Signer.getInstance();
@@ -153,11 +144,7 @@ public class SignerService {
             throw new RuntimeException("Invalid request: " + request);
         }
 
-        try {
-            sessionManager.addResponse(response, app);
-        } catch (Session.SessionTimeoutException e) {
-            disconnect(app);
-        }
+        sessionManager.addResponse(response, app);
 
         log.log(Level.INFO, "Submitting event {0}", event);
 
