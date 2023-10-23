@@ -80,7 +80,7 @@ public class Session {
             return false;
         }
 
-        return (new Date().getTime() - this.getLastUpdate().getTime() > this.getInactivityTimeout()) ||
+        return (new Date().getTime() - lastUpdate.getTime() > inactivityTimeout) ||
                 (new Date().getTime() - this.getDate().getTime() > this.getDuration());
     }
 

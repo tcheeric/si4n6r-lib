@@ -8,6 +8,7 @@ import nostr.api.Nostr;
 import nostr.base.IEvent;
 import nostr.base.ISignable;
 import nostr.base.PublicKey;
+import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
 import nostr.si4n6r.core.IMethod;
 import nostr.si4n6r.core.impl.Request;
@@ -44,6 +45,11 @@ public class SignerService {
         this.sessionManager = SessionManager.getInstance();
     }
 
+    private SignerService(@NonNull Relay relay) {
+        this.signer = Signer.getInstance(relay);
+        this.sessionManager = SessionManager.getInstance();
+    }
+
     public static SignerService getInstance() {
         if (instance == null) {
             instance = new SignerService();
@@ -51,14 +57,24 @@ public class SignerService {
         return instance;
     }
 
+    public static SignerService getInstance(@NonNull Relay relay) {
+        if (instance == null) {
+            instance = new SignerService(relay);
+        }
+        return instance;
+    }
+
     /**
      * Signer-initiated connection to an application.
+     *
      * @param app the application to connect to
      */
-    public void connect(@NonNull PublicKey app) {
+    public void connect(@NonNull PublicKey app) throws Session.SessionTimeoutException {
         IMethod<String> connect = new Connect(app);
         var request = new Request(connect, app);
         request.setSessionId(sessionManager.createSession(app).getId());
+
+        sessionManager.addRequest(request, app);
 
         List<String> params = new ArrayList<>();
         params.add(app.toString());
@@ -74,26 +90,18 @@ public class SignerService {
 
     /**
      * Handling app-initiated requests and submit a corresponding response back.
+     *
      * @param request the request to handle and respond to.
      */
     public void handle(@NonNull Request request) {
 
         log.log(Level.INFO, "Handling {0}", request);
 
-        var method = request.getMethod();
-        var session = sessionManager.getSession(request.getApp());
         var app = request.getApp();
+        var method = request.getMethod();
 
-        if (null != request.getSessionId() && !session.getId().equals(request.getSessionId())) {
-            if (this.sessionManager.hasActiveSession(app)) {
-                log.log(Level.WARNING, "Invalid session id {0} for {1}. Disconnecting...", new Object[]{request.getSessionId(), app});
-                disconnect(app, session);
-            }
-        }
-
-        if (this.sessionManager.hasActiveSession(app) && null == request.getSessionId()) {
-            log.log(Level.WARNING, "Invalid session id {0} for {1}. Disconnecting...", new Object[]{request.getSessionId(), app});
-            disconnect(app, session);
+        if (!METHOD_CONNECT.equals(method.getName())) {
+            validateSession(request, app);
         }
 
         GenericEvent event = null;
@@ -111,12 +119,12 @@ public class SignerService {
             case METHOD_DISCONNECT -> {
                 if (method instanceof Disconnect disconnect && this.sessionManager.hasActiveSession(app)) {
                     disconnect(disconnect, app);
-                    response = new Response(request.getId(), METHOD_CONNECT, disconnect.getResult());
+                    response = new Response(request.getId(), METHOD_DISCONNECT, disconnect.getResult());
                     event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DISCONNECT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_CONNECT -> {
-                if (method instanceof Connect connect && this.sessionManager.hasActiveSession(app)) {
+                if (method instanceof Connect connect && !this.sessionManager.hasActiveSession(app)) {
                     connect(connect, app);
                     response = new Response(request.getId(), METHOD_CONNECT, connect.getResult());
                     event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_CONNECT, response.getResult().toString(), null, request.getSessionId()), sender, app);
@@ -141,23 +149,47 @@ public class SignerService {
             default -> throw new RuntimeException("Invalid request: " + request);
         }
 
-        assert event != null;
+        if (event == null) {
+            throw new RuntimeException("Invalid request: " + request);
+        }
 
         try {
             sessionManager.addResponse(response, app);
         } catch (Session.SessionTimeoutException e) {
-            disconnect(app, session);
+            disconnect(app);
         }
 
         log.log(Level.INFO, "Submitting event {0}", event);
 
         Nostr.sign(sender, event);
         Nostr.send(event);
+
+        cleanup(method, app);
     }
 
-    private void disconnect(@NonNull PublicKey app, @NonNull Session session) {
+    private void cleanup(@NonNull IMethod method, @NonNull PublicKey app) {
+        if (METHOD_DISCONNECT.equals(method.getName())) {
+            this.sessionManager.removeSession(this.sessionManager.getSession(app));
+        }
+    }
+
+    private void validateSession(Request request, PublicKey app) {
+        Session session = sessionManager.getSession(request.getApp());
+        boolean hasActiveSession = this.sessionManager.hasActiveSession(app);
+        String sessionId = request.getSessionId();
+
+        if (sessionId != null && !session.getId().equals(sessionId)) {
+            throw new RuntimeException(String.format("Failed validation: Invalid session id %s for %s.", sessionId, app));
+        }
+
+        if (hasActiveSession && sessionId == null) {
+            throw new RuntimeException(String.format("Failed validation: Missing session id for %s.", app));
+        }
+    }
+
+    private void disconnect(@NonNull PublicKey app) {
         sessionManager.invalidate(app);
-        throw new RuntimeException(new Session.SessionTimeoutException(session));
+        log.log(Level.WARNING, "App {0} disconnected!", app);
     }
 
     // TODO - Add the additional methods as they get implemented.
@@ -186,7 +218,7 @@ public class SignerService {
 
     private void disconnect(@NonNull IMethod method, @NonNull PublicKey app) {
         if (method instanceof Disconnect disconnect && this.sessionManager.hasActiveSession(app)) {
-            this.sessionManager.removeSession(Session.getInstance(app));
+            this.sessionManager.invalidate(app);
             log.log(Level.INFO, "ACK: {0} disconnected!", app);
             disconnect.setResult("ACK");
             return;

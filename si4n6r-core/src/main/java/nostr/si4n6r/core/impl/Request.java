@@ -17,9 +17,11 @@ public class Request {
     private final IMethod method;
     private String sessionId;
 
+/*
     public Request(@NonNull IMethod method) {
         this(UUID.randomUUID().toString(), (PublicKey) method.getParameter("pubkey").get(), method, null);
     }
+*/
 
     public Request(@NonNull IMethod method, @NonNull PublicKey app) {
         this(UUID.randomUUID().toString(), app, method, null);

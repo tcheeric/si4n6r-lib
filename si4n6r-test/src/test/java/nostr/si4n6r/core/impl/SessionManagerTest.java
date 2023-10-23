@@ -38,7 +38,7 @@ public class SessionManagerTest {
         Identity identity = Identity.generateRandomIdentity();
         this.sessionManager.addSession(identity.getPublicKey());
 
-        var request = new Request(new Connect(identity.getPublicKey()));
+        var request = new Request(new Connect(identity.getPublicKey()), publicKey);
         this.sessionManager.addRequest(request, identity.getPublicKey());
 
         var session = this.sessionManager.getSession(identity.getPublicKey());
@@ -52,7 +52,7 @@ public class SessionManagerTest {
     public void addRequestFails() {
         this.sessionManager.invalidate(publicKey);
 
-        var request = new Request(new Connect(publicKey));
+        var request = new Request(new Connect(publicKey), publicKey);
         assertThrows(Session.SessionTimeoutException.class, () -> {
             this.sessionManager.addRequest(request, publicKey);
         });
