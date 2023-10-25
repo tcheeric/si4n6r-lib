@@ -1,3 +1,6 @@
+import nostr.si4n6r.signer.provider.SignerCommandHandler;
+import nostr.ws.handler.command.spi.ICommandHandler;
+
 module si4n6r.signer {
 
     requires lombok;
@@ -17,6 +20,6 @@ module si4n6r.signer {
 
     exports nostr.si4n6r.signer;
 
-    provides nostr.ws.handler.command.spi.ICommandHandler with nostr.si4n6r.signer.provider.SignerCommandHandler;
+    provides ICommandHandler with SignerCommandHandler;
 
 }

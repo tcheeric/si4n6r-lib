@@ -17,6 +17,7 @@ import java.util.logging.Level;
 @Log
 @ToString
 @EqualsAndHashCode
+// TODO - Only create a new instance if the user's public key has been registered, else return throw an exception.
 public class Session {
 
     private final static int FIVE_MINUTES = 60 * 5 * 1000;

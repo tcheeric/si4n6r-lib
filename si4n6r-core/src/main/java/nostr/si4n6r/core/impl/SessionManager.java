@@ -14,8 +14,9 @@ import java.util.logging.Level;
 @Log
 public class SessionManager {
 
-    private static SessionManager instance;
     private final List<Session> sessions;
+
+    private static SessionManager instance;
 
     private SessionManager() {
         this.sessions = new ArrayList<>();
@@ -67,6 +68,7 @@ public class SessionManager {
         log.log(Level.FINER, "Adding response {0} to session {1}", new Object[]{response, session.getId()});
         session.setLastUpdate(new Date());
         responses.add(response);
+        response.setSessionId(session.getId());
     }
 
     public void invalidate(@NonNull PublicKey publicKey) {

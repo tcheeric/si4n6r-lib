@@ -145,6 +145,11 @@ public class SignerService {
         }
 
         sessionManager.addResponse(response, app);
+        try {
+            sessionManager.addRequest(request, app);
+        } catch (Session.SessionTimeoutException e) {
+            throw new RuntimeException(e);
+        }
 
         log.log(Level.INFO, "Submitting event {0}", event);
 
