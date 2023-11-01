@@ -159,7 +159,8 @@ public class SignerService {
 
     private void cleanup(@NonNull IMethod method, @NonNull PublicKey app) {
         if (METHOD_DISCONNECT.equals(method.getName())) {
-            this.sessionManager.removeSession(this.sessionManager.getSession(app));
+            this.sessionManager.invalidate(app);
+            //this.sessionManager.removeSession(this.sessionManager.getSession(app));
         }
     }
 

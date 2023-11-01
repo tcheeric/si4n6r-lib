@@ -3,10 +3,8 @@ package nostr.si4n6r.signer;
 import nostr.base.Relay;
 import nostr.id.Identity;
 import nostr.si4n6r.core.IMethod;
-import nostr.si4n6r.core.impl.Principal;
-import nostr.si4n6r.core.impl.Request;
+import nostr.si4n6r.core.impl.*;
 import nostr.si4n6r.core.impl.SecurityManager;
-import nostr.si4n6r.core.impl.Session;
 import nostr.si4n6r.signer.methods.Connect;
 import nostr.si4n6r.signer.methods.Describe;
 import nostr.si4n6r.signer.methods.Disconnect;
@@ -63,6 +61,17 @@ public class SignerServiceTest {
     }
 
     @Test
+    @DisplayName("Handle app-initiated connect request without passwrd being provided")
+    public void handleConnectWithoutPassword() throws SecurityManager.SecurityManagerException {
+        var app = Identity.generateRandomIdentity().getPublicKey();
+        var request = new Request(new Connect(app), app);
+
+        assertThrows(SecurityManager.SecurityManagerException.class, () -> {
+            this.signerService.handle(request);
+        });
+    }
+
+    @Test
     @DisplayName("Handle disconnect request")
     public void handleDisconnect() throws SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
@@ -80,8 +89,8 @@ public class SignerServiceTest {
         this.signerService.handle(request);
 
         assertEquals("ACK", request.getMethod().getResult());
-        assertThrows(RuntimeException.class, () -> {
-            this.signerService.getSessionManager().getSession(app);
+        assertThrows(SecurityManager.SecurityManagerException.class, () -> {
+            Session.getInstance(app);
         });
     }
 
@@ -108,6 +117,25 @@ public class SignerServiceTest {
         assertTrue(((List) result).contains(IMethod.Constants.METHOD_CONNECT));
         assertTrue(((List) result).contains(IMethod.Constants.METHOD_DISCONNECT));
         assertTrue(((List) result).contains(IMethod.Constants.METHOD_DESCRIBE));
+    }
+
+    @Test
+    @DisplayName("Invalidate an active session")
+    public void invalidateSession() throws SecurityManager.SecurityManagerException {
+        var app = Identity.generateRandomIdentity().getPublicKey();
+
+        var securityManager = SecurityManager.getInstance();
+        securityManager.addPrincipal(Principal.getInstance(app, "password"));
+
+        var request = new Request(new Connect(app), app);
+        this.signerService.handle(request);
+        assertFalse(Session.getInstance(app).hasTimedOut());
+
+        SessionManager.getInstance().invalidate(app);
+        assertFalse(securityManager.hasPrincipal(app));
+        assertThrows(SecurityManager.SecurityManagerException.class, () -> {
+            Session.getInstance(app);
+        });
     }
 
     @Test

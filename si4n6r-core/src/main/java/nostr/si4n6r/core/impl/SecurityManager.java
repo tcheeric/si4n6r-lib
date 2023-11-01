@@ -37,7 +37,7 @@ public class SecurityManager {
         return true;
     }
 
-    public void removePrincipal(@NonNull PublicKey publicKey) {
+    void removePrincipal(@NonNull PublicKey publicKey) {
         this.principals.removeIf(principal -> principal.getNpub().equals(publicKey));
     }
 

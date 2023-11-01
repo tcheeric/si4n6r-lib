@@ -64,11 +64,11 @@ public class NostrApplicationFSVault extends BaseFSVault<NostrApplication> {
     @Override
     public String retrieve(@NonNull String publicKey) {
         var baseDirectory = getBaseDirectory(publicKey);
-        Path privateKeyPath = Path.of(baseDirectory, "metadata.json");
+        Path metadataPath = Path.of(baseDirectory, "metadata.json");
 
-        if (Files.exists(privateKeyPath)) {
+        if (Files.exists(metadataPath)) {
             try {
-                byte[] appData = Files.readAllBytes(privateKeyPath);
+                byte[] appData = Files.readAllBytes(metadataPath);
                 return new String(appData);
             } catch (IOException e) {
                 throw new RuntimeException(e);
