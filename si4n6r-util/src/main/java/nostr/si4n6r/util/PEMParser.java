@@ -17,12 +17,12 @@ public class PEMParser {
 
     private final PEMWithHeaders pemWithHeaders;
 
-    public PEMParser(@NonNull String pem) throws IOException {
+    public PEMParser(@NonNull String pem) {
         this.pemWithHeaders = parsePEMWithHeaders(pem);
     }
 
     public byte[] getPrivateKey() {
-        log.log(Level.INFO, "privateKeyFileBytes: {0}", new String(pemWithHeaders.getPrivateKey()));
+        log.log(Level.INFO, "privateKeyFileBytes: {0}", pemWithHeaders.getPrivateKey());
         return Base64.getDecoder().decode(pemWithHeaders.getPrivateKey());
     }
 
@@ -52,23 +52,22 @@ public class PEMParser {
     private PEMWithHeaders parsePEMWithHeaders(String pem) {
         Map<String, String> headers = new HashMap<>();
         String[] lines = pem.split("\n");
-        String privateKey = "";
+        StringBuilder privateKey = new StringBuilder();
         boolean isPrivateKey = false;
         for (String line : lines) {
             if (line.startsWith("-----BEGIN")) {
-                continue;
             } else if (line.startsWith("-----END")) {
                 isPrivateKey = false;
             } else if (isPrivateKey) {
-                privateKey += line;
+                privateKey.append(line);
             } else if (line.contains(":")) {
                 String[] header = line.split(":");
                 headers.put(header[0].trim(), header[1].trim());
             } else {
                 isPrivateKey = true;
-                privateKey += line;
+                privateKey.append(line);
             }
         }
-        return new PEMWithHeaders(headers, privateKey);
+        return new PEMWithHeaders(headers, privateKey.toString());
     }
 }

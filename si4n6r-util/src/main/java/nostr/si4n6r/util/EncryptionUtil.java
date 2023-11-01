@@ -9,7 +9,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -22,9 +21,6 @@ import java.security.SecureRandom;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
-import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Log
 public class EncryptionUtil {
@@ -69,20 +65,12 @@ public class EncryptionUtil {
     }
 
     private static byte[] extractEncryptedKey(String pem) {
-        try {
-            return new PEMParser(pem).getPrivateKey();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return new PEMParser(pem).getPrivateKey();
     }
 
 
     private static byte[] extractSalt(String pem) {
-        try {
-            return new PEMParser(pem).getSalt();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return new PEMParser(pem).getSalt();
     }
 
     private static SecretKey deriveKeyFromPassword(String password, byte[] salt) throws Exception {
