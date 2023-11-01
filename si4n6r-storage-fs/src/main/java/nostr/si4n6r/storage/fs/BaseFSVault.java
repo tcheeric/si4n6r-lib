@@ -13,7 +13,7 @@ public abstract class BaseFSVault<T extends BaseEntity> implements Vault<T> {
     private final String entityName;
 
     public boolean contains(String key) {
-        return null != this.retrieveNsec(key);
+        return null != this.retrieve(key);
     }
 
     protected String getBaseEntityDirectory() {

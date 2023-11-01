@@ -35,7 +35,7 @@ public class NostrAccountFSVault extends BaseFSVault<NostrAccount> {
     }
 
     @Override
-    public boolean storeNsec(@NonNull NostrAccount account) {
+    public boolean store(@NonNull NostrAccount account) {
         var baseDirectory = getBaseDirectory(account.getPublicKey());
         var baseDirectoryPath = Path.of(baseDirectory);
 
@@ -60,7 +60,7 @@ public class NostrAccountFSVault extends BaseFSVault<NostrAccount> {
     }
 
     @Override
-    public String retrieveNsec(@NonNull String publicKey) {
+    public String retrieve(@NonNull String publicKey) {
         String baseDirectory = getBaseDirectory(publicKey);
         Path privateKeyPath = Path.of(baseDirectory, "nsec.bin");
 
@@ -81,7 +81,7 @@ public class NostrAccountFSVault extends BaseFSVault<NostrAccount> {
     private void storeAccountApplication(NostrAccount account, String baseDirectory) throws IOException {
         if (account.getApplication() != null) {
             var applicationVault = NostrApplicationFSVault.getInstance(getBaseDirectory());
-            applicationVault.storeNsec(account.getApplication());
+            applicationVault.store(account.getApplication());
 
             var appFilePath = createApplicationsBaseDir(baseDirectory);
 

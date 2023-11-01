@@ -7,9 +7,9 @@ public interface Vault<T extends BaseEntity> {
     String VAULT_ENTITY_ACCOUNT = "account";
     String VAULT_ENTITY_APPLICATION = "application";
 
-    boolean storeNsec(T entity);
+    boolean store(T entity);
 
-    String retrieveNsec(String key);
+    String retrieve(String key);
 
     boolean contains(String key);
 }

@@ -37,13 +37,13 @@ public class FSVaultTest {
         vault = NostrAccountFSVault.getInstance();
 
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(new PublicKey(account.getPublicKey()), "password"));
-        var stored = vault.storeNsec(account);
+        var stored = vault.store(account);
         assertTrue(stored);
 
-        stored = vault.storeNsec(account);
+        stored = vault.store(account);
         assertFalse(stored);
 
-        var privateKey = vault.retrieveNsec(account.getPublicKey());
+        var privateKey = vault.retrieve(account.getPublicKey());
         assertEquals(account.getPrivateKey(), privateKey);
     }
 
@@ -54,13 +54,13 @@ public class FSVaultTest {
 
         initApplication();
 
-        var stored = vault.storeNsec(application);
+        var stored = vault.store(application);
         assertTrue(stored);
 
-        stored = vault.storeNsec(application);
+        stored = vault.store(application);
         assertFalse(stored);
 
-        var metadata = vault.retrieveNsec(application.getPublicKey());
+        var metadata = vault.retrieve(application.getPublicKey());
         assertTrue(metadata.contains(application.getPublicKey()));
         assertTrue(metadata.contains(application.getName()));
         assertTrue(metadata.contains(application.getDescription()));

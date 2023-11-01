@@ -36,7 +36,7 @@ public class NostrApplicationFSVault extends BaseFSVault<NostrApplication> {
     }
 
     @Override
-    public boolean storeNsec(NostrApplication application) {
+    public boolean store(NostrApplication application) {
         var baseDirectory = getBaseDirectory(application.getPublicKey());
         var baseDirectoryPath = Path.of(baseDirectory);
 
@@ -62,7 +62,7 @@ public class NostrApplicationFSVault extends BaseFSVault<NostrApplication> {
     }
 
     @Override
-    public String retrieveNsec(@NonNull String publicKey) {
+    public String retrieve(@NonNull String publicKey) {
         var baseDirectory = getBaseDirectory(publicKey);
         Path privateKeyPath = Path.of(baseDirectory, "metadata.json");
 
