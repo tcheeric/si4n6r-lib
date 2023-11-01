@@ -1,4 +1,4 @@
-package nostr.si4n6r.core.impl.methods;
+package nostr.si4n6r.signer.methods;
 
 import nostr.base.PublicKey;
 import nostr.si4n6r.core.Method;

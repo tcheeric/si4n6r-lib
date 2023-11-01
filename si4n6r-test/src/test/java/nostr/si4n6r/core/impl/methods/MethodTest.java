@@ -4,6 +4,7 @@ import nostr.api.NIP01;
 import nostr.base.PublicKey;
 import nostr.event.impl.GenericEvent;
 import nostr.si4n6r.core.IMethod;
+import nostr.si4n6r.signer.methods.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

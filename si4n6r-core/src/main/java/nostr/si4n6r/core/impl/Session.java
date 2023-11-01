@@ -24,8 +24,10 @@ public class Session {
     public final static int DEFAULT_INACTIVITY_TIMEOUT = FIVE_MINUTES;
     private final static int TEN_MINUTES = 60 * 10 * 1000;
     public final static int DEFAULT_DURATION = TEN_MINUTES;
+
     private static Session instance;
     private final PublicKey publicKey;
+
     @ToString.Exclude
     private final List<Request> requests;
     @ToString.Exclude
@@ -38,14 +40,16 @@ public class Session {
     private int inactivityTimeout;
     private int duration;
 
-    private Session(@NonNull PublicKey publicKey) {
-        this(publicKey, FIVE_MINUTES, TEN_MINUTES);
-    }
 
-    private Session(@NonNull PublicKey publicKey, int timeout, int duration) {
+    private Session(@NonNull PublicKey publicKey, int timeout, int duration, @NonNull String baseDirectory) throws SecurityManager.SecurityManagerException {
         log.log(Level.INFO, "Creating new session...");
-        this.id = UUID.randomUUID().toString();
+
         this.publicKey = publicKey;
+        //validatePublicKeyRegistration(baseDirectory);
+
+        validatePassword(publicKey);
+
+        this.id = UUID.randomUUID().toString();
         this.date = new Date();
         this.lastUpdate = new Date();
         this.requests = new ArrayList<>();
@@ -54,14 +58,26 @@ public class Session {
         this.duration = duration;
     }
 
-    public static Session getInstance(@NonNull PublicKey publicKey) {
-        return getInstance(publicKey, FIVE_MINUTES, TEN_MINUTES);
+    private static void validatePassword(PublicKey publicKey) throws SecurityManager.SecurityManagerException {
+        SecurityManager securityManager = SecurityManager.getInstance();
+        if (!securityManager.hasPrincipal(publicKey)) {
+            throw new SecurityManager.SecurityManagerException(publicKey);
+        }
+
+        var principal = securityManager.getPrincipal(publicKey);
+        if (principal.getPassword() == null) {
+            throw new SecurityManager.SecurityManagerException("The public key " + publicKey + " has no password!");
+        }
     }
 
-    public static Session getInstance(@NonNull PublicKey publicKey, int timeout, int duration) {
+    public static Session getInstance(@NonNull PublicKey publicKey) throws SecurityManager.SecurityManagerException {
+        return getInstance(publicKey, FIVE_MINUTES, TEN_MINUTES, System.getProperty("user.home"));
+    }
+
+    public static Session getInstance(@NonNull PublicKey publicKey, int timeout, int duration, @NonNull String baseDirectory) throws SecurityManager.SecurityManagerException {
         var sessionManager = SessionManager.getInstance();
         if (instance == null || sessionManager.hasTimedOut(publicKey)) {
-            instance = new Session(publicKey, timeout, duration);
+            instance = new Session(publicKey, timeout, duration, baseDirectory);
         }
         return instance;
     }
@@ -74,6 +90,16 @@ public class Session {
         return (new Date().getTime() - lastUpdate.getTime() > inactivityTimeout) ||
                 (new Date().getTime() - this.getDate().getTime() > this.getDuration());
     }
+
+/*
+    private void validatePublicKeyRegistration(@NonNull String baseDirectory) {
+        var vault = NostrAccountFSVault.getInstance(baseDirectory);
+        if (!vault.contains(publicKey.toString())) {
+            log.log(Level.SEVERE, "The key {0} is not registered!", publicKey);
+            throw new RuntimeException("The key " + publicKey + " is not registered!");
+        }
+    }
+*/
 
     public static class SessionTimeoutException extends Exception {
         public SessionTimeoutException(@NonNull Session session) {

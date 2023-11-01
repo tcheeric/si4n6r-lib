@@ -11,11 +11,9 @@ import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
 import nostr.si4n6r.core.IMethod;
-import nostr.si4n6r.core.impl.Request;
-import nostr.si4n6r.core.impl.Response;
-import nostr.si4n6r.core.impl.Session;
-import nostr.si4n6r.core.impl.SessionManager;
-import nostr.si4n6r.core.impl.methods.*;
+import nostr.si4n6r.core.impl.SecurityManager;
+import nostr.si4n6r.core.impl.*;
+import nostr.si4n6r.signer.methods.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +58,7 @@ public class SignerService {
      *
      * @param app the application to connect to
      */
-    public void connect(@NonNull PublicKey app) throws Session.SessionTimeoutException {
+    public void connect(@NonNull PublicKey app) throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
         IMethod<String> connect = new Connect(app);
         var request = new Request(connect, app);
         request.setSessionId(sessionManager.createSession(app).getId());
@@ -84,7 +82,7 @@ public class SignerService {
      *
      * @param request the request to handle and respond to.
      */
-    public void handle(@NonNull Request request) {
+    public void handle(@NonNull Request request) throws SecurityManager.SecurityManagerException {
 
         log.log(Level.INFO, "Handling {0}", request);
 
@@ -198,7 +196,7 @@ public class SignerService {
         }
     }
 
-    private void connect(@NonNull IMethod method, @NonNull PublicKey app) {
+    private void connect(@NonNull IMethod method, @NonNull PublicKey app) throws SecurityManager.SecurityManagerException {
         if (method instanceof Connect connect && !this.sessionManager.hasActiveSession(app)) {
             this.sessionManager.addSession(Session.getInstance(app));
             log.log(Level.INFO, "ACK: {0} connected!", app);

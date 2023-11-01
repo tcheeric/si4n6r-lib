@@ -29,7 +29,7 @@ public class SessionManager {
         return instance;
     }
 
-    public Session createSession(@NonNull PublicKey publicKey) {
+    public Session createSession(@NonNull PublicKey publicKey) throws SecurityManager.SecurityManagerException {
         var session = Session.getInstance(publicKey);
         addSession(session);
         return session;
@@ -78,6 +78,7 @@ public class SessionManager {
         log.log(Level.INFO, "Invalidating session {0}", session.getId());
         session.setLastUpdate(new Date(0));
         session.setInactivityTimeout(0);
+        SecurityManager.getInstance().removePrincipal(publicKey);
     }
 
     public boolean addSession(@NonNull Session session) {
@@ -88,7 +89,7 @@ public class SessionManager {
         return true;
     }
 
-    public boolean addSession(@NonNull PublicKey publicKey) {
+    public boolean addSession(@NonNull PublicKey publicKey) throws SecurityManager.SecurityManagerException {
         var session = Session.getInstance(publicKey);
         return addSession(session);
     }

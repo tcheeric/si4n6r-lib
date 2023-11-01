@@ -2,7 +2,7 @@ package nostr.si4n6r.core.impl;
 
 import nostr.base.PublicKey;
 import nostr.id.Identity;
-import nostr.si4n6r.core.impl.methods.Connect;
+import nostr.si4n6r.signer.methods.Connect;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,11 +14,12 @@ public class SessionManagerTest {
     private PublicKey publicKey;
 
     @BeforeAll
-    public void setUp() {
+    public void setUp() throws SecurityManager.SecurityManagerException {
         this.sessionManager = SessionManager.getInstance();
         this.publicKey = new PublicKey("9cb64796ed2c5f18846082cae60c3a18d7a506702cdff0276f86a2ea68a94123");
+        var securityManager = SecurityManager.getInstance();
+        securityManager.addPrincipal(Principal.getInstance(publicKey, "password"));
         sessionManager.addSession(Session.getInstance(publicKey));
-
     }
 
     @Test
@@ -34,8 +35,9 @@ public class SessionManagerTest {
 
     @Test
     @DisplayName("Add a request to the session")
-    public void addRequest() throws Session.SessionTimeoutException {
+    public void addRequest() throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
         Identity identity = Identity.generateRandomIdentity();
+        SecurityManager.getInstance().addPrincipal(Principal.getInstance(identity.getPublicKey(), "password"));
         this.sessionManager.addSession(identity.getPublicKey());
 
         var request = new Request(new Connect(identity.getPublicKey()), publicKey);

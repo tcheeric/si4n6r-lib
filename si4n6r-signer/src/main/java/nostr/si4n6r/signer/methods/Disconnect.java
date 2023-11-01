@@ -1,4 +1,4 @@
-package nostr.si4n6r.core.impl.methods;
+package nostr.si4n6r.signer.methods;
 
 import nostr.si4n6r.core.Method;
 import nostr.si4n6r.core.NIP46Method;

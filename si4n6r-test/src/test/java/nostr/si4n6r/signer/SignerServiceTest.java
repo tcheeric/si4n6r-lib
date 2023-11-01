@@ -3,11 +3,13 @@ package nostr.si4n6r.signer;
 import nostr.base.Relay;
 import nostr.id.Identity;
 import nostr.si4n6r.core.IMethod;
+import nostr.si4n6r.core.impl.Principal;
 import nostr.si4n6r.core.impl.Request;
+import nostr.si4n6r.core.impl.SecurityManager;
 import nostr.si4n6r.core.impl.Session;
-import nostr.si4n6r.core.impl.methods.Connect;
-import nostr.si4n6r.core.impl.methods.Describe;
-import nostr.si4n6r.core.impl.methods.Disconnect;
+import nostr.si4n6r.signer.methods.Connect;
+import nostr.si4n6r.signer.methods.Describe;
+import nostr.si4n6r.signer.methods.Disconnect;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,8 +31,9 @@ public class SignerServiceTest {
 
     @Test
     @DisplayName("Signer-Initiated connect")
-    public void connect() throws Session.SessionTimeoutException {
+    public void connect() throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
+        SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
         this.signerService.connect(app);
 
         var sessionManager = this.signerService.getSessionManager();
@@ -49,8 +52,9 @@ public class SignerServiceTest {
 
     @Test
     @DisplayName("Handle app-initiated connect request")
-    public void handleConnect() {
+    public void handleConnect() throws SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
+        SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
         var request = new Request(new Connect(app), app);
         this.signerService.handle(request);
 
@@ -60,8 +64,12 @@ public class SignerServiceTest {
 
     @Test
     @DisplayName("Handle disconnect request")
-    public void handleDisconnect() {
+    public void handleDisconnect() throws SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
+
+        var securityManager = SecurityManager.getInstance();
+        securityManager.addPrincipal(Principal.getInstance(app, "password"));
+
         var request = new Request(new Connect(app), app);
         this.signerService.handle(request);
         assertFalse(Session.getInstance(app).hasTimedOut());
@@ -79,8 +87,12 @@ public class SignerServiceTest {
 
     @Test
     @DisplayName("Handle describe request")
-    public void handleDescribe() {
+    public void handleDescribe() throws SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
+
+        var securityManager = SecurityManager.getInstance();
+        securityManager.addPrincipal(Principal.getInstance(app, "password"));
+
         var request = new Request(new Connect(app), app);
         this.signerService.handle(request);
         assertFalse(Session.getInstance(app).hasTimedOut());
@@ -102,6 +114,10 @@ public class SignerServiceTest {
     @DisplayName("Handle describe request without connect")
     public void handleDescribeWithoutConnect() {
         var app = Identity.generateRandomIdentity().getPublicKey();
+
+        var securityManager = SecurityManager.getInstance();
+        securityManager.addPrincipal(Principal.getInstance(app, "password"));
+
         var request = new Request(new Describe(), app);
 
         assertThrows(RuntimeException.class, () -> {

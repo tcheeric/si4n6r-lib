@@ -13,6 +13,8 @@
         <module>si4n6r-signer</module>
         <module>si4n6r-test</module>
         <module>si4n6r-util</module>
+        <module>si4n6r-storage</module>
+        <module>si4n6r-storage-fs</module>
     </modules>
 
     <build>

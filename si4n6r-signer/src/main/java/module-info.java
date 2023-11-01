@@ -19,6 +19,7 @@ module si4n6r.signer {
     requires si4n6r.util;
 
     exports nostr.si4n6r.signer;
+    exports nostr.si4n6r.signer.methods;
 
     provides ICommandHandler with SignerCommandHandler;
 

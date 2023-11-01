@@ -1,8 +1,7 @@
 module si4n6r.util {
 
     requires lombok;
-
-    requires si4n6r.core;
+    requires java.logging;
 
     requires nostr.api;
     requires nostr.base;

@@ -1,22 +1,33 @@
 package nostr.si4n6r.signer.provider;
 
+import lombok.NonNull;
 import lombok.extern.java.Log;
 import nostr.api.NIP04;
 import nostr.api.NIP46;
+import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.si4n6r.core.IMethod;
+import nostr.si4n6r.core.impl.Request;
+import nostr.si4n6r.core.impl.SecurityManager;
 import nostr.si4n6r.core.impl.Session;
 import nostr.si4n6r.core.impl.SessionManager;
 import nostr.si4n6r.signer.Signer;
 import nostr.si4n6r.signer.SignerService;
+import nostr.si4n6r.signer.methods.*;
 import nostr.si4n6r.util.Util;
 import nostr.util.NostrException;
 import nostr.ws.handler.command.spi.ICommandHandler;
 
+
+import java.util.List;
 import java.util.logging.Level;
 
 import static nostr.api.Nostr.Json.decodeEvent;
-import static nostr.si4n6r.util.Util.toRequest;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_DESCRIBE;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_DISCONNECT;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_GET_PUBLIC_KEY;
+import static nostr.si4n6r.core.IMethod.Constants.METHOD_SIGN_EVENT;
 
 
 @Log
@@ -69,7 +80,7 @@ public class SignerCommandHandler implements ICommandHandler {
 
             if (content != null) {
                 var nip46Request = NIP46.NIP46Request.fromString(content);
-                var request = toRequest(nip46Request, app);
+                Request request = toRequest(nip46Request, app);
                 var sessionManager = SessionManager.getInstance();
 
                 log.log(Level.INFO, "Request: {0}", request);
@@ -77,14 +88,18 @@ public class SignerCommandHandler implements ICommandHandler {
                 var createSessionFlag = IMethod.Constants.METHOD_CONNECT.equals(request.getMethod().getName());
 
                 if (createSessionFlag) {
-                    sessionManager.createSession(app);
+                    try {
+                        sessionManager.createSession(app);
+                    } catch (SecurityManager.SecurityManagerException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
 
                 try {
                     sessionManager.addRequest(request, app);
                     var service = SignerService.getInstance();
                     service.handle(request);
-                } catch (Session.SessionTimeoutException e) {
+                } catch (Session.SessionTimeoutException | SecurityManager.SecurityManagerException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -97,4 +112,50 @@ public class SignerCommandHandler implements ICommandHandler {
     public void onAuth(String challenge, Relay relay) {
         log.log(Level.FINER, "onAuth({0}, {1})", new Object[]{challenge, relay});
     }
+
+    private static Request toRequest(NIP46.NIP46Request nip46Request, @NonNull PublicKey application) {
+        return new Request(
+                nip46Request.getId(),
+                application,
+                toMethod(
+                        nip46Request.getMethod(),
+                        nip46Request.getParams()
+                ),
+                nip46Request.getSessionId(),
+                null
+        );
+    }
+
+    private static IMethod toMethod(@NonNull String name, @NonNull List<String> params) {
+        switch (name) {
+            case METHOD_CONNECT -> {
+                assert (params.size() == 1);
+                var publicKey = getPublicKey(params.get(0));
+                return new Connect(publicKey);
+            }
+            case METHOD_DISCONNECT -> {
+                assert (params.isEmpty());
+                return new Disconnect();
+            }
+            case METHOD_DESCRIBE -> {
+                assert (params.isEmpty());
+                return new Describe();
+            }
+            case METHOD_GET_PUBLIC_KEY -> {
+                assert (params.isEmpty());
+                return new GetPublicKey();
+            }
+            case METHOD_SIGN_EVENT -> {
+                assert (params.size() == 1);
+                var event = decodeEvent(params.get(0));
+                return new SignEvent(event);
+            }
+            default -> throw new RuntimeException("Invalid method name " + name);
+        }
+    }
+
+    private static PublicKey getPublicKey(@NonNull String hex) {
+        return new PublicKey(hex);
+    }
+
 }

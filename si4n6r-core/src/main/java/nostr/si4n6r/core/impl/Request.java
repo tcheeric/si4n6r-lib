@@ -16,8 +16,9 @@ public class Request<T> {
     private final PublicKey app;
     private final IMethod<T> method;
     private String sessionId;
+    private String password;
 
     public Request(@NonNull IMethod<T> method, @NonNull PublicKey app) {
-        this(UUID.randomUUID().toString(), app, method, null);
+        this(UUID.randomUUID().toString(), app, method, null, null);
     }
 }
