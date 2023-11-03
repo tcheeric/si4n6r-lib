@@ -58,7 +58,7 @@ public class SignerService {
      *
      * @param app the application to connect to
      */
-    public void connect(@NonNull PublicKey app) throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
+    public void doConnect(@NonNull PublicKey app) throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
         IMethod<String> connect = new Connect(app);
         var request = new Request(connect, app);
         request.setSessionId(sessionManager.createSession(app).getId());
@@ -100,21 +100,21 @@ public class SignerService {
         switch (method.getName()) {
             case METHOD_DESCRIBE -> {
                 if (method instanceof Describe describe && this.sessionManager.hasActiveSession(app)) {
-                    describe(describe);
+                    doDescribe(describe);
                     response = new Response(request.getId(), METHOD_DESCRIBE, describe.getResult());
                     event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DESCRIBE, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_DISCONNECT -> {
                 if (method instanceof Disconnect disconnect && this.sessionManager.hasActiveSession(app)) {
-                    disconnect(disconnect, app);
+                    doDisconnect(disconnect, app);
                     response = new Response(request.getId(), METHOD_DISCONNECT, disconnect.getResult());
                     event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DISCONNECT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_CONNECT -> {
                 if (method instanceof Connect connect && !this.sessionManager.hasActiveSession(app)) {
-                    connect(connect, app);
+                    doConnect(connect, app);
                     response = new Response(request.getId(), METHOD_CONNECT, connect.getResult());
                     event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_CONNECT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
@@ -178,14 +178,14 @@ public class SignerService {
         }
     }
 
-    private void disconnect(@NonNull PublicKey app) {
+    private void doDisconnect(@NonNull PublicKey app) {
         sessionManager.invalidate(app);
         log.log(Level.WARNING, "App {0} disconnected!", app);
     }
 
     // TODO - Add the additional methods as they get implemented.
     // TODO - For later: dynamically retrieve the names from the list of concrete classes implementing the IMethod interface
-    private void describe(@NonNull IMethod method) {
+    private void doDescribe(@NonNull IMethod method) {
         if (method instanceof Describe describe) {
             List<String> result = new ArrayList<>();
             result.add(METHOD_DESCRIBE);
@@ -197,7 +197,7 @@ public class SignerService {
         }
     }
 
-    private void connect(@NonNull IMethod method, @NonNull PublicKey app) throws SecurityManager.SecurityManagerException {
+    private void doConnect(@NonNull IMethod method, @NonNull PublicKey app) throws SecurityManager.SecurityManagerException {
         if (method instanceof Connect connect && !this.sessionManager.hasActiveSession(app)) {
             this.sessionManager.addSession(Session.getInstance(app));
             log.log(Level.INFO, "ACK: {0} connected!", app);
@@ -207,7 +207,7 @@ public class SignerService {
         throw new RuntimeException("Invalid method " + method);
     }
 
-    private void disconnect(@NonNull IMethod method, @NonNull PublicKey app) {
+    private void doDisconnect(@NonNull IMethod method, @NonNull PublicKey app) {
         if (method instanceof Disconnect disconnect && this.sessionManager.hasActiveSession(app)) {
             this.sessionManager.invalidate(app);
             log.log(Level.INFO, "ACK: {0} disconnected!", app);

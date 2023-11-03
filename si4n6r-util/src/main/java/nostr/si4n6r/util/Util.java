@@ -8,14 +8,6 @@ import nostr.event.tag.PubKeyTag;
 
 public class Util {
 
-/*
-    public static Response toResponse(@NonNull NIP46.NIP46Response nip46Response) {
-        Response response = new Response(nip46Response.getId(), nip46Response.getMethod(), nip46Response.getResult());
-        response.setError(nip46Response.getError());
-        return response;
-    }
-*/
-
     public static GenericEvent decodeEvent(@NonNull String jsonEvent) {
         var decoder = new GenericEventDecoder(jsonEvent);
         return decoder.decode();

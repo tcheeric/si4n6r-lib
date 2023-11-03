@@ -2,8 +2,8 @@ package nostr.si4n6r.storage.fs;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import nostr.si4n6r.storage.Vault;
 import nostr.si4n6r.storage.model.BaseEntity;
+import nostr.si4n6r.storage.Vault;
 
 @Data
 @AllArgsConstructor

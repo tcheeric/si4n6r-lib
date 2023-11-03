@@ -13,7 +13,11 @@ import nostr.si4n6r.core.impl.Session;
 import nostr.si4n6r.core.impl.SessionManager;
 import nostr.si4n6r.signer.Signer;
 import nostr.si4n6r.signer.SignerService;
-import nostr.si4n6r.signer.methods.*;
+import nostr.si4n6r.signer.methods.Connect;
+import nostr.si4n6r.signer.methods.Describe;
+import nostr.si4n6r.signer.methods.Disconnect;
+import nostr.si4n6r.signer.methods.GetPublicKey;
+import nostr.si4n6r.signer.methods.SignEvent;
 import nostr.si4n6r.util.Util;
 import nostr.util.NostrException;
 import nostr.ws.handler.command.spi.ICommandHandler;
@@ -24,10 +28,6 @@ import java.util.logging.Level;
 
 import static nostr.api.Nostr.Json.decodeEvent;
 import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DESCRIBE;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_DISCONNECT;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_GET_PUBLIC_KEY;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_SIGN_EVENT;
 
 
 @Log
@@ -85,8 +85,9 @@ public class SignerCommandHandler implements ICommandHandler {
 
                 log.log(Level.INFO, "Request: {0}", request);
                 log.log(Level.INFO, "Method: {0}", request.getMethod().getName());
-                var createSessionFlag = IMethod.Constants.METHOD_CONNECT.equals(request.getMethod().getName());
 
+                // Create session if method is "connect"
+                var createSessionFlag = METHOD_CONNECT.equals(request.getMethod().getName());
                 if (createSessionFlag) {
                     try {
                         sessionManager.createSession(app);
@@ -133,19 +134,19 @@ public class SignerCommandHandler implements ICommandHandler {
                 var publicKey = getPublicKey(params.get(0));
                 return new Connect(publicKey);
             }
-            case METHOD_DISCONNECT -> {
+            case IMethod.Constants.METHOD_DISCONNECT -> {
                 assert (params.isEmpty());
                 return new Disconnect();
             }
-            case METHOD_DESCRIBE -> {
+            case IMethod.Constants.METHOD_DESCRIBE -> {
                 assert (params.isEmpty());
                 return new Describe();
             }
-            case METHOD_GET_PUBLIC_KEY -> {
+            case IMethod.Constants.METHOD_GET_PUBLIC_KEY -> {
                 assert (params.isEmpty());
                 return new GetPublicKey();
             }
-            case METHOD_SIGN_EVENT -> {
+            case IMethod.Constants.METHOD_SIGN_EVENT -> {
                 assert (params.size() == 1);
                 var event = decodeEvent(params.get(0));
                 return new SignEvent(event);

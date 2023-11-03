@@ -8,10 +8,7 @@ import nostr.si4n6r.core.impl.SecurityManager;
 import nostr.si4n6r.signer.methods.Connect;
 import nostr.si4n6r.signer.methods.Describe;
 import nostr.si4n6r.signer.methods.Disconnect;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 
@@ -32,7 +29,7 @@ public class SignerServiceTest {
     public void connect() throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
-        this.signerService.connect(app);
+        this.signerService.doConnect(app);
 
         var sessionManager = this.signerService.getSessionManager();
 

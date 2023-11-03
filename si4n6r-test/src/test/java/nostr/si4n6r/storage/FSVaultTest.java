@@ -8,10 +8,7 @@ import nostr.si4n6r.storage.fs.NostrAccountFSVault;
 import nostr.si4n6r.storage.fs.NostrApplicationFSVault;
 import nostr.si4n6r.storage.model.NostrAccount;
 import nostr.si4n6r.storage.model.NostrApplication;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 
@@ -38,10 +35,10 @@ public class FSVaultTest {
 
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(new PublicKey(account.getPublicKey()), "password"));
         var stored = vault.store(account);
-        assertTrue(stored);
+        Assertions.assertTrue(stored);
 
         stored = vault.store(account);
-        assertFalse(stored);
+        Assertions.assertFalse(stored);
 
         var privateKey = vault.retrieve(account.getPublicKey());
         assertEquals(account.getPrivateKey(), privateKey);
@@ -55,10 +52,10 @@ public class FSVaultTest {
         initApplication();
 
         var stored = vault.store(application);
-        assertTrue(stored);
+        Assertions.assertTrue(stored);
 
         stored = vault.store(application);
-        assertFalse(stored);
+        Assertions.assertFalse(stored);
 
         var metadata = vault.retrieve(application.getPublicKey());
         assertTrue(metadata.contains(application.getPublicKey()));
