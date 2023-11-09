@@ -1,5 +1,6 @@
 package nostr.si4n6r.util;
 
+import java.nio.charset.StandardCharsets;
 import lombok.extern.java.Log;
 
 import javax.crypto.Cipher;
@@ -14,6 +15,8 @@ import java.nio.file.StandardOpenOption;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -56,6 +59,26 @@ public class EncryptionUtil {
         return cipher.doFinal(data);
     }
 
+    public static String hashSHA256(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hashedBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashedBytes) {
+                String hex = Integer.toHexString(0xFF & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static void savePrivateKeyAsPEM(PrivateKey privateKey, String privateKeyFile, String password) throws Exception {
         byte[] salt = generateSalt();
         byte[] encryptedPrivateKey = encryptPrivateKey(privateKey, password, salt);
@@ -66,7 +89,6 @@ public class EncryptionUtil {
     private static byte[] extractEncryptedKey(String pem) {
         return new PEMParser(pem).getPrivateKey();
     }
-
 
     private static byte[] extractSalt(String pem) {
         return new PEMParser(pem).getSalt();
@@ -92,11 +114,11 @@ public class EncryptionUtil {
     private static String createPEMFormat(byte[] encryptedPrivateKey, byte[] salt) {
         String encodedEncryptedKey = Base64.getEncoder().encodeToString(encryptedPrivateKey);
         String encodedSalt = Base64.getEncoder().encodeToString(salt);
-        return String.format("-----BEGIN ENCRYPTED PRIVATE KEY-----\n" +
-                "Proc-Type: 4,ENCRYPTED\n" +
-                "DEK-Info: AES-256-CBC,%s\n\n" +
-                "%s\n" +
-                "-----END ENCRYPTED PRIVATE KEY-----", encodedSalt, encodedEncryptedKey);
+        return String.format("-----BEGIN ENCRYPTED PRIVATE KEY-----\n"
+                + "Proc-Type: 4,ENCRYPTED\n"
+                + "DEK-Info: AES-256-CBC,%s\n\n"
+                + "%s\n"
+                + "-----END ENCRYPTED PRIVATE KEY-----", encodedSalt, encodedEncryptedKey);
 
     }
 
@@ -107,14 +129,13 @@ public class EncryptionUtil {
         return cipher.doFinal(privateKey.getEncoded());
     }
 
-/*
+    /*
     private static byte[] encryptPrivateKey(PrivateKey privateKey, String password) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.ENCRYPT_MODE, deriveKeyFromPassword(password, generateSalt()));
         return cipher.doFinal(privateKey.getEncoded());
     }
-*/
-
+     */
     public static byte[] decryptPrivateKey(byte[] encryptedPrivateKey, SecretKey secretKey, byte[] initializationVector) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(initializationVector));

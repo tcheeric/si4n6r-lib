@@ -1,4 +1,4 @@
-package nostr.si4n6r.storage.model;
+package nostr.si4n6r.core.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class NostrAccount extends BaseEntity {
-    private String publicKey;
+// TODO - Rename appropriately to avoid any confusion
+public class AccountProxy extends BaseActorProxy {
     private String privateKey;
-    private NostrApplication application;
+    private ApplicationProxy application;
 }

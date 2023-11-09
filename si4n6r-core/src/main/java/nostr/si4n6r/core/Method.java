@@ -14,16 +14,16 @@ import java.util.logging.Level;
 @Data
 @Log
 @AllArgsConstructor
-public abstract class Method<U> implements IMethod<U> {
+public abstract class Method<T> implements IMethod<T> {
 
     private final List<IParameter> params;
-    private U result;
+    private T result;
 
     public Method() {
         this(new ArrayList<>(), null);
     }
 
-    public Method(@NonNull U result) {
+    public Method(@NonNull T result) {
         this(new ArrayList<>(), result);
     }
 

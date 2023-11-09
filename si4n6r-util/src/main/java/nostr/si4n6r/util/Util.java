@@ -36,5 +36,5 @@ public class Util {
 
     public static String getAccountBaseDirectory() {
         return System.getProperty("user.home") + "/.si4n6r";
-    }
+    }    
 }

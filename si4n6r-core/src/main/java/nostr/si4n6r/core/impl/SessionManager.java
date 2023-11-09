@@ -35,12 +35,12 @@ public class SessionManager {
         return session;
     }
 
-    public void addRequest(@NonNull Request request, @NonNull PublicKey publicKey) throws Session.SessionTimeoutException {
+    public void addRequest(@NonNull Request request, @NonNull PublicKey publicKey) {
 
         var session = getSession(publicKey);
 
         if (session.hasTimedOut()) {
-            throw new Session.SessionTimeoutException(session);
+            return;
         }
 
         var requests = session.getRequests();
@@ -128,7 +128,6 @@ public class SessionManager {
 
         return optSession.isPresent();
     }
-
 
     boolean hasTimedOut(@NonNull PublicKey publicKey) {
         Session session;

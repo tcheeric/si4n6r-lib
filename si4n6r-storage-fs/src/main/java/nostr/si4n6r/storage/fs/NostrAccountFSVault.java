@@ -5,8 +5,7 @@ import lombok.extern.java.Log;
 import nostr.base.PrivateKey;
 import nostr.base.PublicKey;
 import nostr.si4n6r.core.impl.SecurityManager;
-import nostr.si4n6r.storage.model.NostrAccount;
-import nostr.si4n6r.storage.model.VaultEntity;
+import nostr.si4n6r.core.impl.AccountProxy;
 import nostr.si4n6r.util.Util;
 
 import java.io.File;
@@ -14,17 +13,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
 
-import static nostr.si4n6r.storage.Vault.VAULT_ENTITY_ACCOUNT;
 
 @Log
-@VaultEntity(name = VAULT_ENTITY_ACCOUNT)
-public class NostrAccountFSVault extends BaseFSVault<NostrAccount> {
+public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
     private static NostrAccountFSVault instance;
 
     public NostrAccountFSVault() {
-        super(Util.getAccountBaseDirectory(), VAULT_ENTITY_ACCOUNT);
+        super(Util.getAccountBaseDirectory(), VAULT_ACTOR_ACCOUNT);
     }
 
     public static NostrAccountFSVault getInstance() {
@@ -35,7 +33,7 @@ public class NostrAccountFSVault extends BaseFSVault<NostrAccount> {
     }
 
     @Override
-    public boolean store(@NonNull NostrAccount account) {
+    public boolean store(@NonNull AccountProxy account) {
         var baseDirectory = getBaseDirectory(account.getPublicKey());
         var baseDirectoryPath = Path.of(baseDirectory);
 
@@ -78,7 +76,7 @@ public class NostrAccountFSVault extends BaseFSVault<NostrAccount> {
         return getBaseEntityDirectory() + File.separator + publicKey;
     }
 
-    private void storeAccountApplication(NostrAccount account, String baseDirectory) throws IOException {
+    private void storeAccountApplication(AccountProxy account, String baseDirectory) throws IOException {
         if (account.getApplication() != null) {
             var applicationVault = NostrApplicationFSVault.getInstance(getBaseDirectory());
             applicationVault.store(account.getApplication());
@@ -102,10 +100,10 @@ public class NostrAccountFSVault extends BaseFSVault<NostrAccount> {
         return appFilePath;
     }
 
-    private static void storeNsec(NostrAccount account, Path path) throws Exception {
+    private static void storeNsec(AccountProxy account, Path path) throws Exception {
         if (!Files.exists(path)) {
             var securityManager = SecurityManager.getInstance();
-            var principal = securityManager.getPrincipal(new PublicKey(account.getPublicKey()));
+            var principal = securityManager.getPrincipal(new PublicKey(account.getApplication().getPublicKey()));
             var nsec = principal.encryptNsec(new PrivateKey(account.getPrivateKey()));
             Files.write(path, nsec, StandardOpenOption.CREATE);
         }

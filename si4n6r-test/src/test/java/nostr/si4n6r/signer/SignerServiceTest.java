@@ -11,6 +11,8 @@ import nostr.si4n6r.signer.methods.Disconnect;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
+import lombok.NonNull;
+import nostr.base.PublicKey;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,7 +31,7 @@ public class SignerServiceTest {
     public void connect() throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
-        this.signerService.doConnect(app);
+        this.signerService.doConnect(new ApplicationProxy(app));
 
         var sessionManager = this.signerService.getSessionManager();
 
@@ -50,7 +52,9 @@ public class SignerServiceTest {
     public void handleConnect() throws SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
-        var request = new Request(new Connect(app), app);
+        final ApplicationProxy applicationProxy = createApplicationProxy("handleConnect", app);
+
+        var request = new Request(new Connect(app), applicationProxy);
         this.signerService.handle(request);
 
         assertEquals("ACK", request.getMethod().getResult());
@@ -61,7 +65,9 @@ public class SignerServiceTest {
     @DisplayName("Handle app-initiated connect request without passwrd being provided")
     public void handleConnectWithoutPassword() throws SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
-        var request = new Request(new Connect(app), app);
+        final ApplicationProxy applicationProxy = createApplicationProxy("handleConnectWithoutPassword", app);
+
+        var request = new Request(new Connect(app), applicationProxy);
 
         assertThrows(SecurityManager.SecurityManagerException.class, () -> {
             this.signerService.handle(request);
@@ -75,12 +81,13 @@ public class SignerServiceTest {
 
         var securityManager = SecurityManager.getInstance();
         securityManager.addPrincipal(Principal.getInstance(app, "password"));
+        final ApplicationProxy applicationProxy = createApplicationProxy("handleDisconnect", app);
 
-        var request = new Request(new Connect(app), app);
+        var request = new Request(new Connect(app), applicationProxy);
         this.signerService.handle(request);
         assertFalse(Session.getInstance(app).hasTimedOut());
 
-        request = new Request(new Disconnect(), app);
+        request = new Request(new Disconnect(), applicationProxy);
         var session = this.signerService.getSessionManager().getSession(app);
         request.setSessionId(session.getId());
         this.signerService.handle(request);
@@ -98,12 +105,13 @@ public class SignerServiceTest {
 
         var securityManager = SecurityManager.getInstance();
         securityManager.addPrincipal(Principal.getInstance(app, "password"));
+        final ApplicationProxy applicationProxy = createApplicationProxy("handleDescribe", app);
 
-        var request = new Request(new Connect(app), app);
+        var request = new Request(new Connect(app), applicationProxy);
         this.signerService.handle(request);
         assertFalse(Session.getInstance(app).hasTimedOut());
 
-        request = new Request(new Describe(), app);
+        request = new Request(new Describe(), applicationProxy);
         var session = this.signerService.getSessionManager().getSession(app);
         request.setSessionId(session.getId());
         this.signerService.handle(request);
@@ -124,12 +132,12 @@ public class SignerServiceTest {
         var securityManager = SecurityManager.getInstance();
         securityManager.addPrincipal(Principal.getInstance(app, "password"));
 
-        var request = new Request(new Connect(app), app);
+        var request = new Request(new Connect(app), createApplicationProxy("invalidateSession", app));
         this.signerService.handle(request);
         assertFalse(Session.getInstance(app).hasTimedOut());
 
         SessionManager.getInstance().invalidate(app);
-        assertFalse(securityManager.hasPrincipal(app));
+        assertFalse(securityManager.hasPrincipal(app, "password"));
         assertThrows(SecurityManager.SecurityManagerException.class, () -> {
             Session.getInstance(app);
         });
@@ -143,10 +151,17 @@ public class SignerServiceTest {
         var securityManager = SecurityManager.getInstance();
         securityManager.addPrincipal(Principal.getInstance(app, "password"));
 
-        var request = new Request(new Describe(), app);
+        var request = new Request(new Describe(), createApplicationProxy("handleDescribeWithoutConnect", app));
 
         assertThrows(RuntimeException.class, () -> {
             this.signerService.handle(request);
         });
+    }
+
+    private ApplicationProxy createApplicationProxy(String name, @NonNull PublicKey publicKey) {
+        var result = new ApplicationProxy();
+        result.setName(name);
+        result.setPublicKey(publicKey.toString());
+        return result;
     }
 }

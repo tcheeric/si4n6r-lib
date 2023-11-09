@@ -22,6 +22,8 @@ public class Principal {
     private static Principal instance;
 
     private final PublicKey npub;
+    
+    @EqualsAndHashCode.Exclude    
     private final String nsecBinPath;
 
     @EqualsAndHashCode.Exclude
@@ -42,7 +44,7 @@ public class Principal {
     }
 
     public static Principal getInstance(@NonNull PublicKey npub, @NonNull String password) {
-        if (instance == null || !SecurityManager.getInstance().hasPrincipal(npub)) {
+        if (instance == null || !SecurityManager.getInstance().hasPrincipal(npub, password)) {
             instance = new Principal(npub, password);
         }
         return instance;

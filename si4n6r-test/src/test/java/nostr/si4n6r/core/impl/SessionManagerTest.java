@@ -40,7 +40,12 @@ public class SessionManagerTest {
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(identity.getPublicKey(), "password"));
         this.sessionManager.addSession(identity.getPublicKey());
 
-        var request = new Request(new Connect(identity.getPublicKey()), publicKey);
+        var appProxy = new ApplicationProxy();
+        appProxy.setPublicKey(publicKey.toString());
+        appProxy.setId(System.currentTimeMillis());
+        appProxy.setName("addRequest");
+        
+        var request = new Request(new Connect(identity.getPublicKey()), appProxy);
         this.sessionManager.addRequest(request, identity.getPublicKey());
 
         var session = this.sessionManager.getSession(identity.getPublicKey());
@@ -48,16 +53,4 @@ public class SessionManagerTest {
         assertTrue(session.getRequests().contains(request));
         Assertions.assertEquals(session.getId(), request.getSessionId());
     }
-
-    @Test
-    @DisplayName("Add a request to an invalid session")
-    public void addRequestFails() {
-        this.sessionManager.invalidate(publicKey);
-
-        var request = new Request(new Connect(publicKey), publicKey);
-        assertThrows(Session.SessionTimeoutException.class, () -> {
-            this.sessionManager.addRequest(request, publicKey);
-        });
-    }
-
 }

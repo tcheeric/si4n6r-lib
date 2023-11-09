@@ -58,18 +58,6 @@ public class Session {
         this.duration = duration;
     }
 
-    private static void validatePassword(PublicKey publicKey) throws SecurityManager.SecurityManagerException {
-        SecurityManager securityManager = SecurityManager.getInstance();
-        if (!securityManager.hasPrincipal(publicKey)) {
-            throw new SecurityManager.SecurityManagerException(publicKey);
-        }
-
-        var principal = securityManager.getPrincipal(publicKey);
-        if (principal.getPassword() == null) {
-            throw new SecurityManager.SecurityManagerException("The public key " + publicKey + " has no password!");
-        }
-    }
-
     public static Session getInstance(@NonNull PublicKey publicKey) throws SecurityManager.SecurityManagerException {
         return getInstance(publicKey, FIVE_MINUTES, TEN_MINUTES, System.getProperty("user.home"));
     }
@@ -110,4 +98,17 @@ public class Session {
             super(message);
         }
     }
+
+    private static void validatePassword(PublicKey publicKey) throws SecurityManager.SecurityManagerException {
+        SecurityManager securityManager = SecurityManager.getInstance();
+        if (!securityManager.hasPrincipal(publicKey)) {
+            throw new SecurityManager.SecurityManagerException(publicKey);
+        }
+
+        var principal = securityManager.getPrincipal(publicKey);
+        if (principal.getPassword() == null) {
+            throw new SecurityManager.SecurityManagerException("The public key " + publicKey + " has no password!");
+        }
+    }
+
 }

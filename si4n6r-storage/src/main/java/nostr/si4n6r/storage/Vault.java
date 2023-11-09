@@ -1,13 +1,12 @@
 package nostr.si4n6r.storage;
 
-import nostr.si4n6r.storage.model.BaseEntity;
+import nostr.si4n6r.core.impl.BaseActorProxy;
 
-public interface Vault<T extends BaseEntity> {
-
-    String VAULT_ENTITY_ACCOUNT = "account";
-    String VAULT_ENTITY_APPLICATION = "application";
+public interface Vault<T extends BaseActorProxy> {
 
     boolean store(T entity);
+    
+    String getEntityName();
 
     String retrieve(String key);
 

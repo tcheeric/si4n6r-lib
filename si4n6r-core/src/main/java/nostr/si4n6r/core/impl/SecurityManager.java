@@ -6,8 +6,12 @@ import nostr.base.PublicKey;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import lombok.extern.java.Log;
 
 @Data
+@Log
+// TODO - Add a validate() method to check that the given password can indeed be used to decrypt the nsec.
 public class SecurityManager {
 
     private static SecurityManager instance;
@@ -29,15 +33,22 @@ public class SecurityManager {
                 .anyMatch(principal -> principal.getNpub().equals(publicKey));
     }
 
+    public boolean hasPrincipal(@NonNull PublicKey publicKey, @NonNull String password) {
+        return principals.stream()
+                .anyMatch(principal -> principal.getNpub().equals(publicKey) && principal.getPassword().equals(password));
+    }
+
     public boolean addPrincipal(@NonNull Principal principal) {
+        log.log(Level.INFO, "Registering {0}...", principal.getNpub());
         if (principals.contains(principal)) {
             return false;
         }
+
         principals.add(principal);
         return true;
     }
 
-    void removePrincipal(@NonNull PublicKey publicKey) {
+    public void removePrincipal(@NonNull PublicKey publicKey) {
         this.principals.removeIf(principal -> principal.getNpub().equals(publicKey));
     }
 
@@ -57,6 +68,7 @@ public class SecurityManager {
     }
 
     public static class SecurityManagerException extends Exception {
+
         public SecurityManagerException(String message) {
             super(message);
         }

@@ -1,5 +1,7 @@
 package nostr.si4n6r.signer.provider;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 import nostr.api.NIP04;
@@ -9,7 +11,6 @@ import nostr.base.Relay;
 import nostr.si4n6r.core.IMethod;
 import nostr.si4n6r.core.impl.Request;
 import nostr.si4n6r.core.impl.SecurityManager;
-import nostr.si4n6r.core.impl.Session;
 import nostr.si4n6r.core.impl.SessionManager;
 import nostr.si4n6r.signer.Signer;
 import nostr.si4n6r.signer.SignerService;
@@ -22,13 +23,15 @@ import nostr.si4n6r.util.Util;
 import nostr.util.NostrException;
 import nostr.ws.handler.command.spi.ICommandHandler;
 
-
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 import static nostr.api.Nostr.Json.decodeEvent;
+import nostr.event.impl.GenericEvent;
 import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
-
+import nostr.si4n6r.core.impl.ApplicationProxy;
+import nostr.si4n6r.util.EncryptionUtil;
 
 @Log
 public class SignerCommandHandler implements ICommandHandler {
@@ -68,42 +71,9 @@ public class SignerCommandHandler implements ICommandHandler {
         // TODO - Also make sure the public key is a registered/known pubkey, and ignore all other pubkeys
         log.log(Level.FINE, "Recipient: {0} - Signer: {1}", new Object[]{recipient, signer.getIdentity().getPublicKey()});
         if (event.getKind() == 24133 && recipient.equals(signer.getIdentity().getPublicKey())) {
-            log.log(Level.INFO, "Processing event {0}", event);
-
-            String content;
-            try {
-                content = NIP04.decrypt(signer.getIdentity(), event);
-            } catch (NostrException e) {
-                throw new RuntimeException(e);
-            }
-            log.log(Level.INFO, "Content: {0}", content);
-
-            if (content != null) {
-                var nip46Request = NIP46.NIP46Request.fromString(content);
-                Request request = toRequest(nip46Request, app);
-                var sessionManager = SessionManager.getInstance();
-
-                log.log(Level.INFO, "Request: {0}", request);
-                log.log(Level.INFO, "Method: {0}", request.getMethod().getName());
-
-                // Create session if method is "connect"
-                var createSessionFlag = METHOD_CONNECT.equals(request.getMethod().getName());
-                if (createSessionFlag) {
-                    try {
-                        sessionManager.createSession(app);
-                    } catch (SecurityManager.SecurityManagerException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-                try {
-                    sessionManager.addRequest(request, app);
-                    var service = SignerService.getInstance();
-                    service.handle(request);
-                } catch (Session.SessionTimeoutException | SecurityManager.SecurityManagerException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            handleNIP24133(event, signer, app);
+        } else if (event.getKind() == 4) {
+            handleNIP4(event, signer, app);
         } else {
             log.log(Level.FINE, "Skipping event {0} with nip {1}. All fine!", new Object[]{event, event.getNip()});
         }
@@ -117,7 +87,7 @@ public class SignerCommandHandler implements ICommandHandler {
     private static Request toRequest(NIP46.NIP46Request nip46Request, @NonNull PublicKey application) {
         return new Request(
                 nip46Request.getId(),
-                application,
+                new ApplicationProxy(application),
                 toMethod(
                         nip46Request.getMethod(),
                         nip46Request.getParams()
@@ -151,12 +121,81 @@ public class SignerCommandHandler implements ICommandHandler {
                 var event = decodeEvent(params.get(0));
                 return new SignEvent(event);
             }
-            default -> throw new RuntimeException("Invalid method name " + name);
+            default ->
+                throw new RuntimeException("Invalid method name " + name);
         }
     }
 
     private static PublicKey getPublicKey(@NonNull String hex) {
         return new PublicKey(hex);
+    }
+
+    private void handleNIP24133(GenericEvent event, Signer signer, PublicKey app) throws RuntimeException {
+        log.log(Level.INFO, "Processing event {0}", event);
+
+        String content;
+        try {
+            content = NIP04.decrypt(signer.getIdentity(), event);
+        } catch (NostrException e) {
+            throw new RuntimeException(e);
+        }
+        log.log(Level.INFO, "Content: {0}", content);
+
+        if (content != null) {
+            var nip46Request = NIP46.NIP46Request.fromString(content);
+            Request request = toRequest(nip46Request, app);
+            var sessionManager = SessionManager.getInstance();
+
+            log.log(Level.INFO, "Request: {0}", request);
+            log.log(Level.INFO, "Method: {0}", request.getMethod().getName());
+
+            // Create session if method is "connect"
+            var createSessionFlag = METHOD_CONNECT.equals(request.getMethod().getName());
+            if (createSessionFlag) {
+                try {
+                    sessionManager.createSession(app);
+                } catch (SecurityManager.SecurityManagerException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            try {
+                sessionManager.addRequest(request, app);
+                var service = SignerService.getInstance();
+                service.handle(request);
+            } catch (SecurityManager.SecurityManagerException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void handleNIP4(GenericEvent event, Signer signer, PublicKey app) {
+        log.log(Level.FINE, "");
+
+        String content;
+        try {
+            content = NIP04.decrypt(signer.getIdentity(), event);
+        } catch (NostrException e) {
+            throw new RuntimeException(e);
+        }
+        log.log(Level.INFO, "Content: {0}", content);
+
+        if (content != null) {
+            var om = new ObjectMapper();
+            try {
+                Map<String, Object> jsonMap = om.readValue(content, Map.class);
+                var npub = jsonMap.get("npub").toString();
+                var hashedPassword = jsonMap.get("password").toString();
+                var hashedOtp = jsonMap.get("otp").toString();
+
+                var principal = SecurityManager.getInstance().getPrincipal(new PublicKey(npub));
+                if (!hashedPassword.equals(EncryptionUtil.hashSHA256(principal.getPassword()))) {
+                    throw new RuntimeException("Invalid password");
+                }
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
     }
 
 }

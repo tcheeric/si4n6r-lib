@@ -17,6 +17,8 @@ module si4n6r.signer {
 
     requires si4n6r.core;
     requires si4n6r.util;
+    
+    requires com.fasterxml.jackson.databind;
 
     exports nostr.si4n6r.signer;
     exports nostr.si4n6r.signer.methods;
