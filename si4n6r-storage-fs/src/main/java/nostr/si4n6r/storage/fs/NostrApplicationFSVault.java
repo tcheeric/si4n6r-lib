@@ -11,31 +11,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
+import nostr.si4n6r.util.Util;
 
 
 @Log
 public class NostrApplicationFSVault extends BaseFSVault<ApplicationProxy> {
 
-    private static NostrApplicationFSVault instance;
-
     public NostrApplicationFSVault() {
-        super(System.getProperty("user.home"), VAULT_ACTOR_APPLICATION);
+        super(Util.getAccountBaseDirectory(), VAULT_ACTOR_APPLICATION);
     }
 
-    private NostrApplicationFSVault(@NonNull String baseDirectory) {
+    public NostrApplicationFSVault(@NonNull String baseDirectory) {
         super(baseDirectory, VAULT_ACTOR_APPLICATION);
-    }
-
-    public static NostrApplicationFSVault getInstance(@NonNull String baseDirectory) {
-        if (instance == null) {
-            instance = new NostrApplicationFSVault(baseDirectory);
-        }
-        return instance;
     }
 
     @Override
     public boolean store(ApplicationProxy application) {
-        var baseDirectory = getBaseDirectory(application.getPublicKey());
+        var baseDirectory = getBaseDirectory(application);
         var baseDirectoryPath = Path.of(baseDirectory);
 
         if (!Files.exists(baseDirectoryPath)) {
@@ -60,8 +52,8 @@ public class NostrApplicationFSVault extends BaseFSVault<ApplicationProxy> {
     }
 
     @Override
-    public String retrieve(@NonNull String publicKey) {
-        var baseDirectory = getBaseDirectory(publicKey);
+    public String retrieve(@NonNull ApplicationProxy application) {
+        var baseDirectory = getBaseDirectory(application);
         Path metadataPath = Path.of(baseDirectory, "metadata.json");
 
         if (Files.exists(metadataPath)) {
@@ -75,7 +67,8 @@ public class NostrApplicationFSVault extends BaseFSVault<ApplicationProxy> {
         return null;
     }
 
-    private String getBaseDirectory(@NonNull String publicKey) {
-        return getBaseEntityDirectory() + File.separator + publicKey;
+    @Override
+    protected String getBaseDirectory(@NonNull ApplicationProxy application) {
+        return getActorBaseDirectory(application);
     }
 }

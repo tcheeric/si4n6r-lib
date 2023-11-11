@@ -8,7 +8,7 @@ public interface Vault<T extends BaseActorProxy> {
     
     String getEntityName();
 
-    String retrieve(String key);
+    String retrieve(T entity);
 
-    boolean contains(String key);
+    boolean contains(T entity);
 }

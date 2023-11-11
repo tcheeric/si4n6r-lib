@@ -13,7 +13,6 @@ import nostr.base.PublicKey;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-// TODO - Rename appropriately to avoid any confusion
 public class ApplicationProxy extends BaseActorProxy {
 
     private String name;

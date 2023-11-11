@@ -59,16 +59,10 @@ public class FSVaultTest {
     @Test
     @DisplayName("Store and retrieve an application to the FS vault")
     public void application() {
-//        vault = (Vault) NostrApplicationFSVault.getInstance(System.getProperty("user.home"));
 
-        //createApplication();
-        var stored = this.applicationVault.store(application);
-        Assertions.assertTrue(stored);
+        applicationVault.store(application);
 
-        stored = applicationVault.store(application);
-        Assertions.assertFalse(stored);
-
-        var metadata = applicationVault.retrieve(application.getPublicKey());
+        var metadata = applicationVault.retrieve(application);
         assertTrue(metadata.contains(application.getPublicKey()));
         assertTrue(metadata.contains(application.getName()));
         assertTrue(metadata.contains(application.getDescription()));

@@ -23,6 +23,7 @@ import java.security.SecureRandom;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
+import java.util.zip.CRC32;
 
 @Log
 public class EncryptionUtil {
@@ -77,6 +78,20 @@ public class EncryptionUtil {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    public static String generateCRC32Hash(String input) {
+        // Convert the input string to bytes
+        byte[] inputBytes = input.getBytes();
+
+        // Get the CRC32 instance
+        CRC32 crc32 = new CRC32();
+
+        // Update the CRC32 with the input bytes
+        crc32.update(inputBytes);
+
+        // Get the CRC32 hash value
+        return String.valueOf(crc32.getValue());
     }
 
     private static void savePrivateKeyAsPEM(PrivateKey privateKey, String privateKeyFile, String password) throws Exception {

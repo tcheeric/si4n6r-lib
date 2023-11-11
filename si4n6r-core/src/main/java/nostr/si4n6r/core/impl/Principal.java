@@ -22,8 +22,8 @@ public class Principal {
     private static Principal instance;
 
     private final PublicKey npub;
-    
-    @EqualsAndHashCode.Exclude    
+
+    @EqualsAndHashCode.Exclude
     private final String nsecBinPath;
 
     @EqualsAndHashCode.Exclude
@@ -48,6 +48,10 @@ public class Principal {
             instance = new Principal(npub, password);
         }
         return instance;
+    }
+
+    public static Principal getInstance(@NonNull AccountProxy account, @NonNull String password) {
+        return getInstance(new PublicKey(account.getPublicKey()), password);
     }
 
     public nostr.base.PrivateKey decryptNsec() {

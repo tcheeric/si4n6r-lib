@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-// TODO - Rename appropriately to avoid any confusion
 public class AccountProxy extends BaseActorProxy {
     private String privateKey;
     private ApplicationProxy application;

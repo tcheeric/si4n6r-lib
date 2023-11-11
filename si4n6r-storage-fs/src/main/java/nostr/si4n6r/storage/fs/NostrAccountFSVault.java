@@ -12,41 +12,43 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import nostr.si4n6r.core.impl.ApplicationProxy;
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
-
+import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
+import nostr.si4n6r.util.EncryptionUtil;
 
 @Log
 public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
-
-    private static NostrAccountFSVault instance;
 
     public NostrAccountFSVault() {
         super(Util.getAccountBaseDirectory(), VAULT_ACTOR_ACCOUNT);
     }
 
-    public static NostrAccountFSVault getInstance() {
-        if (instance == null) {
-            instance = new NostrAccountFSVault();
-        }
-        return instance;
+    public NostrAccountFSVault(@NonNull String baseDirectory) {
+        super(baseDirectory, VAULT_ACTOR_APPLICATION);
     }
 
     @Override
     public boolean store(@NonNull AccountProxy account) {
-        var baseDirectory = getBaseDirectory(account.getPublicKey());
+        var baseDirectory = getBaseDirectory(account);
         var baseDirectoryPath = Path.of(baseDirectory);
 
         if (!Files.exists(baseDirectoryPath)) {
             try {
                 Files.createDirectories(baseDirectoryPath);
 
-                var accountFilePath = baseDirectory + File.separator + "nsec.bin";
-                var path = Path.of(accountFilePath);
+                var accountFileLocation = baseDirectory + File.separator + "nsec.bin";
+                var path = Path.of(accountFileLocation);
 
                 storeNsec(account, path);
 
-                storeAccountApplication(account, baseDirectory);
+                storeApplication(account.getApplication());
+
+                createAppSymbolicLinkUnderAccountApp(account);
+
+                createNSecSymbolicLink(account, path);
 
                 return true;
 
@@ -58,13 +60,13 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
     }
 
     @Override
-    public String retrieve(@NonNull String publicKey) {
-        String baseDirectory = getBaseDirectory(publicKey);
+    public String retrieve(@NonNull AccountProxy account) {
+        String baseDirectory = getBaseDirectory(account);
         Path privateKeyPath = Path.of(baseDirectory, "nsec.bin");
 
         if (Files.exists(privateKeyPath)) {
             var securityManager = SecurityManager.getInstance();
-            var principal = securityManager.getPrincipal(new PublicKey(publicKey));
+            var principal = securityManager.getPrincipal(new PublicKey(account.getPublicKey()));
             var nsec = principal.decryptNsec();
             return nsec.toString();
         }
@@ -72,27 +74,53 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
         return null;
     }
 
-    private String getBaseDirectory(@NonNull String publicKey) {
-        return getBaseEntityDirectory() + File.separator + publicKey;
+    @Override
+    protected String getBaseDirectory(@NonNull AccountProxy account) {
+        return getActorBaseDirectory(account);
     }
 
-    private void storeAccountApplication(AccountProxy account, String baseDirectory) throws IOException {
-        if (account.getApplication() != null) {
-            var applicationVault = NostrApplicationFSVault.getInstance(getBaseDirectory());
-            applicationVault.store(account.getApplication());
+    private static void createNSecSymbolicLink(AccountProxy account, Path target) throws IOException {
+        final var nsecPath = _getAccountApplicationBaseDir(account);
+        var link = Paths.get(nsecPath, EncryptionUtil.generateCRC32Hash(account.getPublicKey()) + ".nsec");
+        if (Files.exists(link)) {
+            Files.delete(link);
+        }
+        Files.createSymbolicLink(link, target);
+    }
 
-            var appFilePath = createApplicationsBaseDir(baseDirectory);
+    private static void createAppSymbolicLinkUnderAccountApp(AccountProxy account) throws IOException {
+        var appFilePath = _createAccountApplicationsBaseDir(account);
+        var link = Paths.get(appFilePath, EncryptionUtil.generateCRC32Hash(account.getApplication().getPublicKey()) + ".app");
+        if (Files.exists(link)) {
+            Files.delete(link);
+        }
 
-            // store application public key as a file
-            var appPath = Path.of(appFilePath, account.getApplication().getPublicKey());
-            if (Files.notExists(appPath)) {
-                Files.createFile(appPath);
-            }
+        var appVault = new NostrApplicationFSVault();
+        var target = appVault.getBaseDirectory(account.getApplication()) + File.separator + "metadata.json";
+        Files.createSymbolicLink(link, Paths.get(target));
+    }
+
+    private void storeApplication(@NonNull ApplicationProxy application) {
+        var applicationVault = new NostrApplicationFSVault();
+        applicationVault.store(application);
+    }
+
+    private static void storeNsec(AccountProxy account, Path path) throws Exception {
+        if (!Files.exists(path)) {
+            byte[] nsec = _getNsec(account);
+            Files.write(path, nsec, StandardOpenOption.CREATE);
         }
     }
 
-    private static String createApplicationsBaseDir(String baseDirectory) throws IOException {
-        var appFilePath = baseDirectory + File.separator + "applications";
+    private static byte[] _getNsec(AccountProxy account) throws Exception {
+        var securityManager = SecurityManager.getInstance();
+        var principal = securityManager.getPrincipal(new PublicKey(account.getApplication().getPublicKey()));
+        var nsec = principal.encryptNsec(new PrivateKey(account.getPrivateKey()));
+        return nsec;
+    }
+
+    private static String _createAccountApplicationsBaseDir(@NonNull AccountProxy account) throws IOException {
+        String appFilePath = _getAccountApplicationBaseDir(account);
         var appPath = Path.of(appFilePath);
         if (Files.notExists(appPath)) {
             Files.createDirectories(appPath);
@@ -100,12 +128,15 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
         return appFilePath;
     }
 
-    private static void storeNsec(AccountProxy account, Path path) throws Exception {
-        if (!Files.exists(path)) {
-            var securityManager = SecurityManager.getInstance();
-            var principal = securityManager.getPrincipal(new PublicKey(account.getApplication().getPublicKey()));
-            var nsec = principal.encryptNsec(new PrivateKey(account.getPrivateKey()));
-            Files.write(path, nsec, StandardOpenOption.CREATE);
-        }
+    private static String _getAccountApplicationBaseDir(@NonNull AccountProxy account) {
+        var accountBaseDir = __getAccountBaseDirectory(account);
+        var appFilePath = accountBaseDir + File.separator + VAULT_ACTOR_APPLICATION + File.separator + EncryptionUtil.generateCRC32Hash(account.getApplication().getPublicKey());
+        return appFilePath;
+    }
+
+    private static String __getAccountBaseDirectory(@NonNull AccountProxy account) {
+        var accountVault = new NostrAccountFSVault();
+        var baseDirectory = accountVault.getBaseDirectory(account);
+        return baseDirectory;
     }
 }
