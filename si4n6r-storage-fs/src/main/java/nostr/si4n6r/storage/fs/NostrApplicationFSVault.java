@@ -4,14 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 import nostr.si4n6r.core.impl.ApplicationProxy;
+import nostr.si4n6r.core.impl.BaseActorProxy;
+import nostr.si4n6r.util.Util;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
-import nostr.si4n6r.util.Util;
 
 
 @Log
@@ -34,11 +36,11 @@ public class NostrApplicationFSVault extends BaseFSVault<ApplicationProxy> {
             try {
                 Files.createDirectories(baseDirectoryPath);
 
-                var metadataPath = baseDirectory + File.separator +  "metadata.json";
+                var metadataPath = baseDirectory + File.separator + "metadata.json";
                 var path = Path.of(metadataPath);
 
                 try {
-                    var data = new ObjectMapper().writeValueAsBytes(application);
+                    var data = new ObjectMapper().writeValueAsBytes(application.getTemplate());
                     Files.write(path, data, StandardOpenOption.CREATE);
                     return true;
                 } catch (IOException e) {
@@ -71,4 +73,13 @@ public class NostrApplicationFSVault extends BaseFSVault<ApplicationProxy> {
     protected String getBaseDirectory(@NonNull ApplicationProxy application) {
         return getActorBaseDirectory(application);
     }
+
+    @Override
+    protected String getActorBaseDirectory(@NonNull BaseActorProxy proxy) {
+        if (proxy instanceof ApplicationProxy applicationProxy) {
+            return this.getBaseDirectory() + File.separator + getEntityName() + File.separator + applicationProxy.getName();
+        }
+        throw new IllegalArgumentException("Invalid proxy type");
+    }
+
 }

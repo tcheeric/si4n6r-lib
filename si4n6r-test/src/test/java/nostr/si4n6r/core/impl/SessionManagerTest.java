@@ -40,8 +40,7 @@ public class SessionManagerTest {
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(identity.getPublicKey(), "password"));
         this.sessionManager.addSession(identity.getPublicKey());
 
-        var appProxy = new ApplicationProxy();
-        appProxy.setPublicKey(publicKey.toString());
+        var appProxy = new ApplicationProxy(publicKey);
         appProxy.setId(System.currentTimeMillis());
         appProxy.setName("addRequest");
         

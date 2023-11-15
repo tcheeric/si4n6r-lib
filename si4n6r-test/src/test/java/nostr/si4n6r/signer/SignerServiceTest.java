@@ -159,9 +159,8 @@ public class SignerServiceTest {
     }
 
     private ApplicationProxy createApplicationProxy(String name, @NonNull PublicKey publicKey) {
-        var result = new ApplicationProxy();
+        var result = new ApplicationProxy(publicKey);
         result.setName(name);
-        result.setPublicKey(publicKey.toString());
         return result;
     }
 }

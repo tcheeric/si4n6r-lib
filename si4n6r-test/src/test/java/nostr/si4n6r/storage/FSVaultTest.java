@@ -51,9 +51,6 @@ public class FSVaultTest {
         stored = accountVault.store(account);
         Assertions.assertFalse(stored);
 
-        // NOTE - You can't do this!
-//        var privateKey = accountVault.retrieve(account.getApplication().getPublicKey());
-//        assertEquals(account.getPrivateKey(), privateKey);
     }
 
     @Test
@@ -63,24 +60,25 @@ public class FSVaultTest {
         applicationVault.store(application);
 
         var metadata = applicationVault.retrieve(application);
-        assertTrue(metadata.contains(application.getPublicKey()));
-        assertTrue(metadata.contains(application.getName()));
-        assertTrue(metadata.contains(application.getDescription()));
-        assertTrue(metadata.contains(application.getPublicKey()));
-        assertTrue(metadata.contains(application.getUrl()));
-        assertTrue(metadata.contains(application.getIcons().get(0)));
-        assertTrue(metadata.contains(application.getIcons().get(1)));
+        var template = application.getTemplate();
+        assertTrue(metadata.contains(template.getName()));
+        assertTrue(metadata.contains(template.getDescription()));
+        assertTrue(metadata.contains(template.getUrl()));
+        assertTrue(metadata.contains(template.getIcons().get(0)));
+        assertTrue(metadata.contains(template.getIcons().get(1)));
     }
 
     private void createApplication() {
         var identity = Identity.generateRandomIdentity();
-        this.application = new ApplicationProxy();
-        application.setPublicKey(identity.getPublicKey().toString());
-        application.setId(System.currentTimeMillis());
-        application.setName("shibboleth");
-        application.setUrl("https://nostr.com");
-        application.setDescription("A nip-46 compliant nostr application");
-        application.setIcons(List.of("https://nostr.com/favicon.ico", "https://nostr.com/favicon.png"));
+        this.application = new ApplicationProxy(identity.getPublicKey());
+        this.application.setId(System.currentTimeMillis());
+        var now = System.currentTimeMillis();
+        this.application.setName("shibboleth_" + now);
+        var template = this.application.getTemplate();
+        template.setName("shibboleth_" + now);
+        template.setUrl("https://nostr.com");
+        template.setDescription("A nip-46 compliant nostr application");
+        template.setIcons(List.of("https://nostr.com/favicon.ico", "https://nostr.com/favicon.png"));
     }
 
     private void createAccount() {

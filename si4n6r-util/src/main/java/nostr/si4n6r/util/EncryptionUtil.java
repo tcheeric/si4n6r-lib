@@ -1,6 +1,9 @@
 package nostr.si4n6r.util;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
+
+import lombok.NonNull;
 import lombok.extern.java.Log;
 
 import javax.crypto.Cipher;
@@ -92,6 +95,10 @@ public class EncryptionUtil {
 
         // Get the CRC32 hash value
         return String.valueOf(crc32.getValue());
+    }
+
+    public static String getPrivateKeyFile(@NonNull nostr.base.PublicKey npub) {
+        return Util.getAccountBaseDirectory() + File.separator + "secrets" + File.separator + npub + ".pem";
     }
 
     private static void savePrivateKeyAsPEM(PrivateKey privateKey, String privateKeyFile, String password) throws Exception {
