@@ -4,7 +4,6 @@ import java.io.File;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
-import nostr.si4n6r.core.impl.AccountProxy;
 import nostr.si4n6r.core.impl.BaseActorProxy;
 import nostr.si4n6r.storage.Vault;
 import nostr.si4n6r.util.EncryptionUtil;

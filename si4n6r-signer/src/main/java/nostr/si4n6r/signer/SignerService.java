@@ -57,13 +57,12 @@ public class SignerService {
      * Signer-initiated connection to an application.
      *
      * @param app the application to connect to
-     * @throws nostr.si4n6r.core.impl.Session.SessionTimeoutException
      * @throws nostr.si4n6r.core.impl.SecurityManager.SecurityManagerException
      */
-    public void doConnect(@NonNull ApplicationProxy app) throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
+    public void doConnect(@NonNull ApplicationProxy app) throws SecurityManager.SecurityManagerException {
         final PublicKey appPublicKey = new PublicKey(app.getPublicKey());
         IMethod<String> connect = new Connect(appPublicKey);
-        var request = new Request(connect, app);
+        var request = new Request<>(connect, app);
         request.setSessionId(sessionManager.createSession(appPublicKey).getId());
 
         sessionManager.addRequest(request, appPublicKey);
@@ -147,8 +146,6 @@ public class SignerService {
             throw new RuntimeException("Invalid request: " + request);
         }
 
-        assert response != null;
-        
         sessionManager.addResponse(response, appPublicKey);
         sessionManager.addRequest(request, appPublicKey);
 

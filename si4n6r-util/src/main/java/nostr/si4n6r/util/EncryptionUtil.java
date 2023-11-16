@@ -136,11 +136,13 @@ public class EncryptionUtil {
     private static String createPEMFormat(byte[] encryptedPrivateKey, byte[] salt) {
         String encodedEncryptedKey = Base64.getEncoder().encodeToString(encryptedPrivateKey);
         String encodedSalt = Base64.getEncoder().encodeToString(salt);
-        return String.format("-----BEGIN ENCRYPTED PRIVATE KEY-----\n"
-                + "Proc-Type: 4,ENCRYPTED\n"
-                + "DEK-Info: AES-256-CBC,%s\n\n"
-                + "%s\n"
-                + "-----END ENCRYPTED PRIVATE KEY-----", encodedSalt, encodedEncryptedKey);
+        return String.format("""
+                -----BEGIN ENCRYPTED PRIVATE KEY-----
+                Proc-Type: 4,ENCRYPTED
+                DEK-Info: AES-256-CBC,%s
+
+                %s
+                -----END ENCRYPTED PRIVATE KEY-----""", encodedSalt, encodedEncryptedKey);
 
     }
 
@@ -151,13 +153,6 @@ public class EncryptionUtil {
         return cipher.doFinal(privateKey.getEncoded());
     }
 
-    /*
-    private static byte[] encryptPrivateKey(PrivateKey privateKey, String password) throws Exception {
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, deriveKeyFromPassword(password, generateSalt()));
-        return cipher.doFinal(privateKey.getEncoded());
-    }
-     */
     public static byte[] decryptPrivateKey(byte[] encryptedPrivateKey, SecretKey secretKey, byte[] initializationVector) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(initializationVector));

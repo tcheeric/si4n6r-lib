@@ -54,9 +54,7 @@ public class Si4n6rAuthTest {
 
         var securityManager = SecurityManager.getInstance();
 
-        Assertions.assertThrows(RuntimeException.class, () -> {
-            securityManager.getPrincipal(new PublicKey(applicationProxy.getPublicKey()));
-        }, "Principal not found!");
+        Assertions.assertThrows(RuntimeException.class, () -> securityManager.getPrincipal(new PublicKey(applicationProxy.getPublicKey())), "Principal not found!");
 
         var accountRegistration = new AccountRegistration("password");
         accountRegistration.register(accountProxy);
@@ -80,9 +78,7 @@ public class Si4n6rAuthTest {
 
         var securityManager = SecurityManager.getInstance();
 
-        Assertions.assertThrows(RuntimeException.class, () -> {
-            securityManager.getPrincipal(new PublicKey(applicationProxy.getPublicKey()));
-        }, "Principal not found!");
+        Assertions.assertThrows(RuntimeException.class, () -> securityManager.getPrincipal(new PublicKey(applicationProxy.getPublicKey())), "Principal not found!");
 
         securityManager.addPrincipal(Principal.getInstance(new PublicKey(applicationProxy.getPublicKey()), "password"));
         var principal = securityManager.getPrincipal(new PublicKey(applicationProxy.getPublicKey()));

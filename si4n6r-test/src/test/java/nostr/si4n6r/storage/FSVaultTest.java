@@ -19,8 +19,8 @@ import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class FSVaultTest {
 
-    private Vault accountVault;
-    private Vault applicationVault;
+    private Vault<AccountProxy> accountVault;
+    private Vault<ApplicationProxy> applicationVault;
     private AccountProxy account;
     private ApplicationProxy application;
 
@@ -102,7 +102,7 @@ public class FSVaultTest {
         return ServiceLoader
                 .load(Vault.class)
                 .stream()
-                .map(p -> p.get())
+                .map(ServiceLoader.Provider::get)
                 .filter(v -> entity.equals(v.getEntityName()))
                 .findFirst()
                 .get();

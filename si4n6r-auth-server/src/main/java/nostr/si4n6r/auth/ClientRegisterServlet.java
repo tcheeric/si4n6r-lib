@@ -5,7 +5,6 @@
 package nostr.si4n6r.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +36,7 @@ public class ClientRegisterServlet extends HttpServlet {
         return ServiceLoader
                 .load(Vault.class)
                 .stream()
-                .map(p -> p.get())
+                .map(ServiceLoader.Provider::get)
                 .filter(v -> entity.equals(v.getEntityName()))
                 .findFirst()
                 .get();
@@ -51,11 +50,10 @@ public class ClientRegisterServlet extends HttpServlet {
      *
      * @param request  servlet request
      * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
      * @throws IOException      if an I/O error occurs
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
 
         log.log(Level.INFO, "Processing the servlet request");
 
@@ -104,12 +102,11 @@ public class ClientRegisterServlet extends HttpServlet {
      *
      * @param request  servlet request
      * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
      * @throws IOException      if an I/O error occurs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
         processRequest(request, response);
     }
 
@@ -118,12 +115,11 @@ public class ClientRegisterServlet extends HttpServlet {
      *
      * @param request  servlet request
      * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
      * @throws IOException      if an I/O error occurs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
         processRequest(request, response);
     }
 

@@ -4,7 +4,6 @@
  */
 package nostr.si4n6r.registration;
 
-import nostr.si4n6r.core.impl.AccountProxy;
 import nostr.si4n6r.core.impl.ApplicationProxy;
 import nostr.si4n6r.core.impl.BaseActorProxy;
 import nostr.si4n6r.storage.fs.NostrApplicationFSVault;

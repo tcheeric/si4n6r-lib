@@ -3,16 +3,6 @@
  */
 package nostr.si4n6r.registration;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -20,8 +10,17 @@ import lombok.extern.java.Log;
 import nostr.si4n6r.core.impl.AccountProxy;
 import nostr.si4n6r.core.impl.BaseActorProxy;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
+
 /**
- *
  * @author eric
  */
 @Data
@@ -30,7 +29,7 @@ import nostr.si4n6r.core.impl.BaseActorProxy;
 public class AccountRegistration extends AbstractBaseRegistration<AccountProxy> {
 
     private final String password;
-    
+
     public AccountRegistration(@NonNull String password) {
         super(BaseActorProxy.VAULT_ACTOR_ACCOUNT);
         this.password = password;
@@ -38,6 +37,7 @@ public class AccountRegistration extends AbstractBaseRegistration<AccountProxy> 
 
     @Override
     public void register(@NonNull AccountProxy proxy) {
+        HttpURLConnection connection = null;
         try {
             // Specify the base URL of the servlet
             var baseUrl = "http://localhost:8080/si4n6r-auth-server-1.0-SNAPSHOT/register";
@@ -52,13 +52,13 @@ public class AccountRegistration extends AbstractBaseRegistration<AccountProxy> 
 
             // Construct the URL with parameters
             var urlString = buildUrlWithParameters(baseUrl, parameters);
-            
+
             log.log(Level.INFO, "URL: {0}", urlString);
-            
+
             var url = new URI(urlString).toURL();
 
             // Complete the method. Write code to connect the url and return the server output
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Accept", "application/json");
 
@@ -74,10 +74,13 @@ public class AccountRegistration extends AbstractBaseRegistration<AccountProxy> 
             // Print the response content
             log.log(Level.INFO, "Response Content: {0}", responseContent.toString());
 
-            // Close the connection
-            connection.disconnect();
         } catch (IOException | URISyntaxException e) {
             log.log(Level.SEVERE, "An error has occurred: ", e);
+        } finally {
+            // Close the connection
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 

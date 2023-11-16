@@ -29,7 +29,7 @@ import nostr.si4n6r.util.EncryptionUtil;
 @Getter
 public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
-    private String password;
+    private final String password;
 
     public NostrAccountFSVault() {
         super(Util.getAccountBaseDirectory(), VAULT_ACTOR_ACCOUNT);

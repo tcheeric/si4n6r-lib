@@ -85,7 +85,7 @@ public class SignerCommandHandler implements ICommandHandler {
     }
 
     private static Request toRequest(NIP46.NIP46Request nip46Request, @NonNull PublicKey application) {
-        return new Request(
+        return new Request<>(
                 nip46Request.getId(),
                 new ApplicationProxy(application),
                 toMethod(

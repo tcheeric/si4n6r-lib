@@ -10,7 +10,6 @@ import nostr.si4n6r.util.EncryptionUtil;
 import nostr.si4n6r.util.Util;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
@@ -49,7 +48,7 @@ public class Principal {
         return getInstance(new PublicKey(account.getPublicKey()), password);
     }
 
-    public nostr.base.PrivateKey decryptNsec() throws IOException, Exception {
+    public nostr.base.PrivateKey decryptNsec() throws Exception {
         String privateKeyFile = EncryptionUtil.getPrivateKeyFile(this.npub);
 
         // Print the contents of the private key file

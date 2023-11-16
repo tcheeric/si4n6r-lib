@@ -35,7 +35,7 @@ public class SessionManagerTest {
 
     @Test
     @DisplayName("Add a request to the session")
-    public void addRequest() throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
+    public void addRequest() throws SecurityManager.SecurityManagerException {
         Identity identity = Identity.generateRandomIdentity();
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(identity.getPublicKey(), "password"));
         this.sessionManager.addSession(identity.getPublicKey());
@@ -44,7 +44,7 @@ public class SessionManagerTest {
         appProxy.setId(System.currentTimeMillis());
         appProxy.setName("addRequest");
         
-        var request = new Request(new Connect(identity.getPublicKey()), appProxy);
+        var request = new Request<>(new Connect(identity.getPublicKey()), appProxy);
         this.sessionManager.addRequest(request, identity.getPublicKey());
 
         var session = this.sessionManager.getSession(identity.getPublicKey());

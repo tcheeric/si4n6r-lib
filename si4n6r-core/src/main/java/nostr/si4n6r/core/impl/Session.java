@@ -79,16 +79,6 @@ public class Session {
                 (new Date().getTime() - this.getDate().getTime() > this.getDuration());
     }
 
-/*
-    private void validatePublicKeyRegistration(@NonNull String baseDirectory) {
-        var vault = NostrAccountFSVault.getInstance(baseDirectory);
-        if (!vault.contains(publicKey.toString())) {
-            log.log(Level.SEVERE, "The key {0} is not registered!", publicKey);
-            throw new RuntimeException("The key " + publicKey + " is not registered!");
-        }
-    }
-*/
-
     public static class SessionTimeoutException extends Exception {
         public SessionTimeoutException(@NonNull Session session) {
             super("Session " + session.getId() + " timed out!");

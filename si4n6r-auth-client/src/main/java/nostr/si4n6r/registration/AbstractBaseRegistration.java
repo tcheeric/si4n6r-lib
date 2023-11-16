@@ -6,7 +6,6 @@ package nostr.si4n6r.registration;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.java.Log;
 import nostr.si4n6r.core.impl.BaseActorProxy;
 

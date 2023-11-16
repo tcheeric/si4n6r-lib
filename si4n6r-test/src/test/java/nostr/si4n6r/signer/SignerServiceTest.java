@@ -28,7 +28,7 @@ public class SignerServiceTest {
 
     @Test
     @DisplayName("Signer-Initiated connect")
-    public void connect() throws Session.SessionTimeoutException, SecurityManager.SecurityManagerException {
+    public void connect() throws SecurityManager.SecurityManagerException {
         var app = Identity.generateRandomIdentity().getPublicKey();
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
         this.signerService.doConnect(new ApplicationProxy(app));
@@ -54,7 +54,7 @@ public class SignerServiceTest {
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
         final ApplicationProxy applicationProxy = createApplicationProxy("handleConnect", app);
 
-        var request = new Request(new Connect(app), applicationProxy);
+        var request = new Request<>(new Connect(app), applicationProxy);
         this.signerService.handle(request);
 
         assertEquals("ACK", request.getMethod().getResult());
@@ -63,15 +63,13 @@ public class SignerServiceTest {
 
     @Test
     @DisplayName("Handle app-initiated connect request without passwrd being provided")
-    public void handleConnectWithoutPassword() throws SecurityManager.SecurityManagerException {
+    public void handleConnectWithoutPassword() {
         var app = Identity.generateRandomIdentity().getPublicKey();
         final ApplicationProxy applicationProxy = createApplicationProxy("handleConnectWithoutPassword", app);
 
-        var request = new Request(new Connect(app), applicationProxy);
+        var request = new Request<>(new Connect(app), applicationProxy);
 
-        assertThrows(SecurityManager.SecurityManagerException.class, () -> {
-            this.signerService.handle(request);
-        });
+        assertThrows(SecurityManager.SecurityManagerException.class, () -> this.signerService.handle(request));
     }
 
     @Test
@@ -83,19 +81,17 @@ public class SignerServiceTest {
         securityManager.addPrincipal(Principal.getInstance(app, "password"));
         final ApplicationProxy applicationProxy = createApplicationProxy("handleDisconnect", app);
 
-        var request = new Request(new Connect(app), applicationProxy);
+        var request = new Request<>(new Connect(app), applicationProxy);
         this.signerService.handle(request);
         assertFalse(Session.getInstance(app).hasTimedOut());
 
-        request = new Request(new Disconnect(), applicationProxy);
+        request = new Request<>(new Disconnect(), applicationProxy);
         var session = this.signerService.getSessionManager().getSession(app);
         request.setSessionId(session.getId());
         this.signerService.handle(request);
 
         assertEquals("ACK", request.getMethod().getResult());
-        assertThrows(SecurityManager.SecurityManagerException.class, () -> {
-            Session.getInstance(app);
-        });
+        assertThrows(SecurityManager.SecurityManagerException.class, () -> Session.getInstance(app));
     }
 
     @Test
@@ -107,21 +103,21 @@ public class SignerServiceTest {
         securityManager.addPrincipal(Principal.getInstance(app, "password"));
         final ApplicationProxy applicationProxy = createApplicationProxy("handleDescribe", app);
 
-        var request = new Request(new Connect(app), applicationProxy);
-        this.signerService.handle(request);
+        var requestConnect = new Request<>(new Connect(app), applicationProxy);
+        this.signerService.handle(requestConnect);
         assertFalse(Session.getInstance(app).hasTimedOut());
 
-        request = new Request(new Describe(), applicationProxy);
+        var describe = new Describe();
+        var requestDescribe = new Request<>(describe, applicationProxy);
         var session = this.signerService.getSessionManager().getSession(app);
-        request.setSessionId(session.getId());
-        this.signerService.handle(request);
+        requestDescribe.setSessionId(session.getId());
+        this.signerService.handle(requestDescribe);
 
-        var result = request.getMethod().getResult();
-        assertTrue(result instanceof List);
-        assertEquals(3, ((List<?>) result).size());
-        assertTrue(((List) result).contains(IMethod.Constants.METHOD_CONNECT));
-        assertTrue(((List) result).contains(IMethod.Constants.METHOD_DISCONNECT));
-        assertTrue(((List) result).contains(IMethod.Constants.METHOD_DESCRIBE));
+        var result = requestDescribe.getMethod().getResult();
+        assertEquals(3, result.size());
+        assertTrue(result.contains(IMethod.Constants.METHOD_CONNECT));
+        assertTrue(result.contains(IMethod.Constants.METHOD_DISCONNECT));
+        assertTrue(result.contains(IMethod.Constants.METHOD_DESCRIBE));
     }
 
     @Test
@@ -132,15 +128,13 @@ public class SignerServiceTest {
         var securityManager = SecurityManager.getInstance();
         securityManager.addPrincipal(Principal.getInstance(app, "password"));
 
-        var request = new Request(new Connect(app), createApplicationProxy("invalidateSession", app));
+        var request = new Request<>(new Connect(app), createApplicationProxy("invalidateSession", app));
         this.signerService.handle(request);
         assertFalse(Session.getInstance(app).hasTimedOut());
 
         SessionManager.getInstance().invalidate(app);
         assertFalse(securityManager.hasPrincipal(app, "password"));
-        assertThrows(SecurityManager.SecurityManagerException.class, () -> {
-            Session.getInstance(app);
-        });
+        assertThrows(SecurityManager.SecurityManagerException.class, () -> Session.getInstance(app));
     }
 
     @Test
@@ -151,11 +145,9 @@ public class SignerServiceTest {
         var securityManager = SecurityManager.getInstance();
         securityManager.addPrincipal(Principal.getInstance(app, "password"));
 
-        var request = new Request(new Describe(), createApplicationProxy("handleDescribeWithoutConnect", app));
+        var request = new Request<>(new Describe(), createApplicationProxy("handleDescribeWithoutConnect", app));
 
-        assertThrows(RuntimeException.class, () -> {
-            this.signerService.handle(request);
-        });
+        assertThrows(RuntimeException.class, () -> this.signerService.handle(request));
     }
 
     private ApplicationProxy createApplicationProxy(String name, @NonNull PublicKey publicKey) {

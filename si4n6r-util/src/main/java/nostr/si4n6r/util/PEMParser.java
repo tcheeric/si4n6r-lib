@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 
-import java.io.IOException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
