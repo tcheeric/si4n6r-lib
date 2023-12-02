@@ -25,7 +25,7 @@
         <dependency>
             <groupId>nostr-java</groupId>
             <artifactId>nostr-java-base</artifactId>
-            <version>0.3-SNAPSHOT</version>
+            <version>${nostr-java.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

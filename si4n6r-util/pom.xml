@@ -15,7 +15,7 @@
         <dependency>
             <groupId>nostr-java</groupId>
             <artifactId>nostr-java-api</artifactId>
-            <version>0.3-SNAPSHOT</version>
+            <version>${nostr-java.version}</version>
         </dependency>
     </dependencies>
 
