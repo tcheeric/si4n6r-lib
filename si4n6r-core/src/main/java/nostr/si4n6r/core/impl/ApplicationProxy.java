@@ -1,5 +1,6 @@
 package nostr.si4n6r.core.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import nostr.base.PublicKey;
 
@@ -38,5 +39,14 @@ public class ApplicationProxy extends BaseActorProxy {
         private String description;
         private String url;
         private List<String> icons;
+
+        public static ApplicationProxy.ApplicationTemplate fromJsonString(@NonNull String json) {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                return mapper.readValue(json, ApplicationProxy.ApplicationTemplate.class);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
     }
 }
