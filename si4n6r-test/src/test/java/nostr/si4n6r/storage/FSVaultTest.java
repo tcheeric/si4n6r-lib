@@ -6,6 +6,7 @@ import nostr.si4n6r.core.impl.Principal;
 import nostr.si4n6r.core.impl.SecurityManager;
 import nostr.si4n6r.core.impl.AccountProxy;
 import nostr.si4n6r.core.impl.ApplicationProxy;
+import nostr.si4n6r.storage.fs.NostrAccountFSVault;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
@@ -38,19 +39,21 @@ public class FSVaultTest {
     @DisplayName("Store and retrieve an account to the FS vault")
     public void account() {
 
-        final var principalPublicKey = new PublicKey(account.getApplication().getPublicKey());
-        final Principal principal = Principal.getInstance(principalPublicKey, "password");
+        final var password = "password";
+        ((NostrAccountFSVault)accountVault).setPassword(password);
+        final var principalPublicKey = new PublicKey(account.getPublicKey());
+        final Principal principal = Principal.getInstance(principalPublicKey, password);
         var flag = SecurityManager.getInstance().addPrincipal(principal);
         assertTrue(flag);
 
         var stored = accountVault.store(account);
-        System.out.println("Account Vault: " + accountVault);
-
         Assertions.assertTrue(stored);
+
+        var nsec = accountVault.retrieve(account);
+        assertNotNull(nsec);
 
         stored = accountVault.store(account);
         Assertions.assertFalse(stored);
-
     }
 
     @Test

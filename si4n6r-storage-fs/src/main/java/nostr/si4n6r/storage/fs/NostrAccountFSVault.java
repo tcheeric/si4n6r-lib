@@ -1,14 +1,16 @@
 package nostr.si4n6r.storage.fs;
 
-import lombok.Getter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 import nostr.base.PrivateKey;
 import nostr.base.PublicKey;
+import nostr.si4n6r.core.impl.AccountProxy;
+import nostr.si4n6r.core.impl.ApplicationProxy;
 import nostr.si4n6r.core.impl.Principal;
 import nostr.si4n6r.core.impl.SecurityManager;
-import nostr.si4n6r.core.impl.AccountProxy;
-import nostr.si4n6r.util.PasswordGenerator;
+import nostr.si4n6r.util.EncryptionUtil;
 import nostr.si4n6r.util.Util;
 
 import java.io.File;
@@ -18,22 +20,22 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.logging.Level;
-import nostr.si4n6r.core.impl.ApplicationProxy;
+
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
 import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
 import static nostr.si4n6r.util.EncryptionUtil.getPrivateKeyFile;
 
-import nostr.si4n6r.util.EncryptionUtil;
-
+@EqualsAndHashCode(callSuper = true)
 @Log
-@Getter
+@Data
 public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
-    private final String password;
+    @NonNull
+    private String password;
 
     public NostrAccountFSVault() {
         super(Util.getAccountBaseDirectory(), VAULT_ACTOR_ACCOUNT);
-        this.password = PasswordGenerator.generate(16);
+        //this.password = PasswordGenerator.generate(16);
     }
 
     @Override

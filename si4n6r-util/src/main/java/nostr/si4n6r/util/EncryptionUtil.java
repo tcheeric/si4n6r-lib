@@ -26,6 +26,7 @@ import java.security.SecureRandom;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
+import java.util.logging.Level;
 import java.util.zip.CRC32;
 
 @Log
@@ -41,12 +42,12 @@ public class EncryptionUtil {
         return keyPair.getPublic();
     }
 
-    public static PrivateKey loadPrivateKeyFromPEM(String privateKeyFile, String password) throws Exception {
+    public static PrivateKey loadPrivateKeyFromPEM(@NonNull String privateKeyFile, @NonNull String password) throws Exception {
+        log.log(Level.FINE, "Loading private key from {0} with password: {1}", new Object[]{privateKeyFile, password});
         String pem = Files.readString(Path.of(privateKeyFile));
         byte[] encryptedPrivateKey = extractEncryptedKey(pem);
         byte[] salt = extractSalt(pem);
-        SecretKey secretKey = deriveKeyFromPassword(password, salt);
-        byte[] privateKeyBytes = decryptPrivateKey(encryptedPrivateKey, secretKey, salt);
+        byte[] privateKeyBytes = decryptPrivateKey(encryptedPrivateKey, password, salt);
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
         return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
@@ -103,8 +104,10 @@ public class EncryptionUtil {
 
     private static void savePrivateKeyAsPEM(PrivateKey privateKey, String privateKeyFile, String password) throws Exception {
         byte[] salt = generateSalt();
+        log.log(Level.FINE, "Encrypting private key with password: {0}", password);
         byte[] encryptedPrivateKey = encryptPrivateKey(privateKey, password, salt);
         String pem = createPEMFormat(encryptedPrivateKey, salt);
+        log.log(Level.FINE, "Saving private key to {0}", privateKeyFile);
         Files.write(Path.of(privateKeyFile), pem.getBytes(), StandardOpenOption.CREATE);
     }
 
@@ -117,6 +120,7 @@ public class EncryptionUtil {
     }
 
     private static SecretKey deriveKeyFromPassword(String password, byte[] salt) throws Exception {
+        log.log(Level.FINE, "Deriving key from password: {0} with salt: {1}", new Object[]{password, salt});
         int iterationCount = 65536;
         int keyLength = 256;
         KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt, iterationCount, keyLength);
@@ -151,6 +155,13 @@ public class EncryptionUtil {
         SecretKey secretKey = deriveKeyFromPassword(password, salt);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(salt));
         return cipher.doFinal(privateKey.getEncoded());
+    }
+
+    public static byte[] decryptPrivateKey(byte[] encryptedPrivateKey, String password, byte[] salt) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        SecretKey secretKey = deriveKeyFromPassword(password, salt);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(salt));
+        return cipher.doFinal(encryptedPrivateKey);
     }
 
     public static byte[] decryptPrivateKey(byte[] encryptedPrivateKey, SecretKey secretKey, byte[] initializationVector) throws Exception {

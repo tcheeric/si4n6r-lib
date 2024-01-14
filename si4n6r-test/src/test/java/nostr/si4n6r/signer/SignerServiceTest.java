@@ -10,7 +10,6 @@ import nostr.si4n6r.signer.methods.Describe;
 import nostr.si4n6r.signer.methods.Disconnect;
 import org.junit.jupiter.api.*;
 
-import java.util.List;
 import lombok.NonNull;
 import nostr.base.PublicKey;
 

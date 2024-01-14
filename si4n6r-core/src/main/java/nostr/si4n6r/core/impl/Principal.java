@@ -34,7 +34,7 @@ public class Principal {
     private Principal(@NonNull PublicKey npub, @NonNull String password) {
         this.npub = npub;
         this.password = password;
-        this.nsecBinPath = Util.getAccountBaseDirectory() + File.separator + "account" + File.separator + npub + File.separator + "nsec.bin";
+        this.nsecBinPath = Util.getAccountBaseDirectory() + File.separator + "account" + File.separator + EncryptionUtil.generateCRC32Hash(npub.toString()) + File.separator + "nsec.bin";
     }
 
     public static Principal getInstance(@NonNull PublicKey npub, @NonNull String password) {

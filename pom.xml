@@ -84,9 +84,16 @@
 
     <properties>
         <lombok.version>1.18.24</lombok.version>
+        <bouncy-castle.version>1.75</bouncy-castle.version>
         <nostr-java.version>0.3.1</nostr-java.version>
+
+        <!-- Test Dependency Versions -->
+        <junit.version>5.9.1</junit.version>
+        <assertj.version>3.23.1</assertj.version>
+
         <maven.compiler.source>20</maven.compiler.source>
         <maven.compiler.target>20</maven.compiler.target>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

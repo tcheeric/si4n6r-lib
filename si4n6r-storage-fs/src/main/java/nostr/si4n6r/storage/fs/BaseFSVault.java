@@ -1,6 +1,5 @@
 package nostr.si4n6r.storage.fs;
 
-import java.io.File;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
@@ -8,12 +7,19 @@ import nostr.si4n6r.core.impl.BaseActorProxy;
 import nostr.si4n6r.storage.Vault;
 import nostr.si4n6r.util.EncryptionUtil;
 
+import java.io.File;
+
 @Data
 @AllArgsConstructor
 public abstract class BaseFSVault<T extends BaseActorProxy> implements Vault<T> {
 
     private final String baseDirectory;
     private final String entityName;
+
+    public BaseFSVault() {
+        this.baseDirectory = null;
+        this.entityName = null;
+    }
 
     @Override
     public boolean contains(T entity) {
