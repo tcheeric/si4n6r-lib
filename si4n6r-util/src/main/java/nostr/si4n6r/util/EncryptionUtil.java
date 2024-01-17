@@ -1,8 +1,5 @@
 package nostr.si4n6r.util;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-
 import lombok.NonNull;
 import lombok.extern.java.Log;
 
@@ -12,6 +9,8 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -52,13 +51,22 @@ public class EncryptionUtil {
         return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
 
-    public static byte[] decryptWithPrivateKey(PrivateKey privateKey, byte[] encryptedData) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        return cipher.doFinal(encryptedData);
+    public static nostr.base.PrivateKey decryptNsec(@NonNull nostr.base.PublicKey npub, @NonNull String password) throws Exception {
+        var nsecBinPath = Util.getAccountBaseDirectory() + File.separator + "account" + File.separator + EncryptionUtil.generateCRC32Hash(npub.toString()) + File.separator + "nsec.bin";
+
+        var privateKeyFile = EncryptionUtil.getPrivateKeyFile(npub);
+        var privateKey = EncryptionUtil.loadPrivateKeyFromPEM(privateKeyFile, password);
+        var nsecRawData = Files.readAllBytes(Path.of(nsecBinPath));
+
+        var nsec = EncryptionUtil.decryptWithPrivateKey(privateKey, nsecRawData);
+        return new nostr.base.PrivateKey(nsec);
     }
 
-    public static byte[] encryptWithPublicKey(PublicKey publicKey, byte[] data) throws Exception {
+    public static byte[] encryptNsec(@NonNull nostr.base.PrivateKey nsec, java.security.PublicKey publicKey) throws Exception {
+        return EncryptionUtil.encryptWithPublicKey(publicKey, nsec.getRawData());
+    }
+
+    private static byte[] encryptWithPublicKey(PublicKey publicKey, byte[] data) throws Exception {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         return cipher.doFinal(data);
@@ -100,6 +108,12 @@ public class EncryptionUtil {
 
     public static String getPrivateKeyFile(@NonNull nostr.base.PublicKey npub) {
         return Util.getAccountBaseDirectory() + File.separator + "secrets" + File.separator + npub + ".pem";
+    }
+
+    private static byte[] decryptWithPrivateKey(PrivateKey privateKey, byte[] encryptedData) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        return cipher.doFinal(encryptedData);
     }
 
     private static void savePrivateKeyAsPEM(PrivateKey privateKey, String privateKeyFile, String password) throws Exception {

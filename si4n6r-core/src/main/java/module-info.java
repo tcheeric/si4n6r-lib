@@ -10,6 +10,8 @@ module si4n6r.core {
 
     requires com.fasterxml.jackson.databind;
 
+    requires com.auth0.jwt;
+
     exports nostr.si4n6r.core;
     exports nostr.si4n6r.core.impl;
 }

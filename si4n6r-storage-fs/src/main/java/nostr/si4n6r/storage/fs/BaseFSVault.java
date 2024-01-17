@@ -22,8 +22,8 @@ public abstract class BaseFSVault<T extends BaseActorProxy> implements Vault<T> 
     }
 
     @Override
-    public boolean contains(T entity) {
-        return null != this.retrieve(entity);
+    public boolean contains(T entity, String password) {
+        return null != this.retrieve(entity, password);
     }
 
     protected String getBaseEntityDirectory() {

@@ -6,7 +6,6 @@ import lombok.extern.java.Log;
 import nostr.base.PublicKey;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -15,7 +14,6 @@ import java.util.logging.Level;
 public class SessionManager {
 
     private final List<Session> sessions;
-
     private static SessionManager instance;
 
     private SessionManager() {
@@ -29,8 +27,12 @@ public class SessionManager {
         return instance;
     }
 
-    public Session createSession(@NonNull PublicKey publicKey) throws SecurityManager.SecurityManagerException {
-        var session = Session.getInstance(publicKey);
+    public Session createSession(
+            @NonNull PublicKey user,
+            @NonNull PublicKey app,
+            int timeout,
+            @NonNull String password) {
+        var session = new Session(user, app, timeout, password);
         addSession(session);
         return session;
     }
@@ -38,11 +40,6 @@ public class SessionManager {
     public void addRequest(@NonNull Request request, @NonNull PublicKey publicKey) {
 
         var session = getSession(publicKey);
-
-        if (session.hasTimedOut()) {
-            return;
-        }
-
         var requests = session.getRequests();
 
         if (requests.contains(request)) {
@@ -50,8 +47,7 @@ public class SessionManager {
             return;
         }
 
-        log.log(Level.INFO, "Linking request {0} to session {1}", new Object[]{request, session.getId()});
-        session.setLastUpdate(new Date());
+        log.log(Level.FINE, "Linking request {0} to session {1}", new Object[]{request, session.getId()});
         requests.add(request);
         request.setSessionId(session.getId());
     }
@@ -66,20 +62,19 @@ public class SessionManager {
         }
 
         log.log(Level.FINER, "Adding response {0} to session {1}", new Object[]{response, session.getId()});
-        session.setLastUpdate(new Date());
         responses.add(response);
         response.setSessionId(session.getId());
     }
 
+    // TODO - Instead of removing the session, introduce a status (VALID, INVALID) and set it to INVALID
+/*
     public void invalidate(@NonNull PublicKey publicKey) {
 
         var session = getSession(publicKey);
-
-        log.log(Level.INFO, "Invalidating session {0}", session.getId());
-        session.setLastUpdate(new Date(0));
-        session.setInactivityTimeout(0);
-        SecurityManager.getInstance().removePrincipal(publicKey);
+        session.setStatus(Session.Status.INACTIVE);
+        //removeSession(session);
     }
+*/
 
     public boolean addSession(@NonNull Session session) {
         if (this.sessions.contains(session)) {
@@ -89,6 +84,32 @@ public class SessionManager {
         return true;
     }
 
+    public void activateSession(@NonNull PublicKey publicKey) {
+        var session = getSession(publicKey);
+        session.setStatus(Session.Status.ACTIVE);
+    }
+
+    public void deactivateSession(@NonNull PublicKey publicKey) {
+        var session = getSession(publicKey);
+        session.setStatus(Session.Status.INACTIVE);
+    }
+
+    public boolean sessionIsActive(@NonNull PublicKey publicKey) {
+        var session = getSession(publicKey);
+        return session.getStatus().equals(Session.Status.ACTIVE);
+    }
+
+    public boolean sessionIsInactive(@NonNull PublicKey publicKey) {
+        var session = getSession(publicKey);
+        return session.getStatus().equals(Session.Status.INACTIVE);
+    }
+
+    public boolean sessionIsNew(@NonNull PublicKey publicKey) {
+        var session = getSession(publicKey);
+        return session.getStatus().equals(Session.Status.NEW);
+    }
+
+/*
     public boolean addSession(@NonNull PublicKey publicKey) throws SecurityManager.SecurityManagerException {
         var session = Session.getInstance(publicKey);
         return addSession(session);
@@ -98,11 +119,8 @@ public class SessionManager {
         if (!this.sessions.contains(session)) {
             return false;
         }
-        if (session.hasTimedOut()) {
-            this.sessions.remove(session);
-            return true;
-        }
-        return false;
+        this.sessions.remove(session);
+        return true;
     }
 
     public boolean removeSession(@NonNull PublicKey publicKey) {
@@ -113,23 +131,26 @@ public class SessionManager {
             return false;
         }
     }
+*/
 
     public Session getSession(@NonNull PublicKey publicKey) {
         return sessions.stream()
-                .filter(session -> session.getPublicKey().equals(publicKey))
+                .filter(session -> session.getApp().equals(publicKey))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Session not found!"));
     }
 
+/*
     public boolean hasActiveSession(@NonNull PublicKey publicKey) {
         var optSession = sessions.stream()
-                .filter(session -> session.getPublicKey().equals(publicKey) && !session.hasTimedOut())
+                .filter(session -> session.getApp().equals(publicKey))
                 .findFirst();
 
-        return optSession.isPresent();
+        return optSession.isPresent() && optSession.get().getStatus().equals(Session.Status.ACTIVE);
     }
+*/
 
-    boolean hasTimedOut(@NonNull PublicKey publicKey) {
+    boolean hasExpired(@NonNull PublicKey publicKey) {
         Session session;
 
         try {
@@ -138,6 +159,6 @@ public class SessionManager {
             return true;
         }
 
-        return session.hasTimedOut();
+        return session.hasExpired();
     }
 }

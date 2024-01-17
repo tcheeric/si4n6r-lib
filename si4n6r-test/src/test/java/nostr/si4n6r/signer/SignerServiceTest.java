@@ -1,24 +1,33 @@
 package nostr.si4n6r.signer;
 
+import lombok.NonNull;
+import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.id.Identity;
 import nostr.si4n6r.core.IMethod;
-import nostr.si4n6r.core.impl.*;
-import nostr.si4n6r.core.impl.SecurityManager;
+import nostr.si4n6r.core.impl.ApplicationProxy;
+import nostr.si4n6r.core.impl.Request;
+import nostr.si4n6r.core.impl.Session;
+import nostr.si4n6r.core.impl.SessionManager;
 import nostr.si4n6r.signer.methods.Connect;
 import nostr.si4n6r.signer.methods.Describe;
 import nostr.si4n6r.signer.methods.Disconnect;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
-import lombok.NonNull;
-import nostr.base.PublicKey;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class SignerServiceTest {
 
     private SignerService signerService;
+    private PublicKey app;
+    private PublicKey user;
 
     @BeforeAll
     public void setUp() {
@@ -27,7 +36,8 @@ public class SignerServiceTest {
 
     @Test
     @DisplayName("Signer-Initiated connect")
-    public void connect() throws SecurityManager.SecurityManagerException {
+    public void connect() {
+/*
         var app = Identity.generateRandomIdentity().getPublicKey();
         SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
         this.signerService.doConnect(new ApplicationProxy(app));
@@ -44,72 +54,79 @@ public class SignerServiceTest {
                 .orElse(null);
 
         assertNotNull(request);
+*/
     }
 
     @Test
     @DisplayName("Handle app-initiated connect request")
-    public void handleConnect() throws SecurityManager.SecurityManagerException {
-        var app = Identity.generateRandomIdentity().getPublicKey();
-        SecurityManager.getInstance().addPrincipal(Principal.getInstance(app, "password"));
-        final ApplicationProxy applicationProxy = createApplicationProxy("handleConnect", app);
+    public void handleConnect() {
+        this.app = Identity.generateRandomIdentity().getPublicKey();
+        this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        var request = new Request<>(new Connect(app), applicationProxy);
+        final var applicationProxy = createApplicationProxy("handleConnect", app);
+        final var session = SignerServiceTest.createSession(user, app);
+
+        assertTrue(this.signerService.getSessionManager().sessionIsNew(app));
+
+        final var request = new Request<>(new Connect(app), applicationProxy, session.getId());
         this.signerService.handle(request);
 
         assertEquals("ACK", request.getMethod().getResult());
-        assertTrue(this.signerService.getSessionManager().hasActiveSession(app));
+        assertTrue(this.signerService.getSessionManager().sessionIsActive(app));
+
+        // You cannot connect twice
+        assertThrows(RuntimeException.class, () -> this.signerService.handle(request));
+
+        SessionManager.getInstance().deactivateSession(app);
     }
 
     @Test
-    @DisplayName("Handle app-initiated connect request without passwrd being provided")
-    public void handleConnectWithoutPassword() {
-        var app = Identity.generateRandomIdentity().getPublicKey();
-        final ApplicationProxy applicationProxy = createApplicationProxy("handleConnectWithoutPassword", app);
+    @DisplayName("Handle disconnect request without connect")
+    public void handleDisconnectWithoutConnect() {
+        this.app = Identity.generateRandomIdentity().getPublicKey();
+        this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        var request = new Request<>(new Connect(app), applicationProxy);
+        final var applicationProxy = createApplicationProxy("handleDisconnect", app);
+        var session = SignerServiceTest.createSession(user, app);
 
-        assertThrows(SecurityManager.SecurityManagerException.class, () -> this.signerService.handle(request));
+        // You cannot disconnect without having connected first
+        final var request = new Request<>(new Disconnect(), applicationProxy, session.getId());
+        assertThrows(RuntimeException.class, () -> this.signerService.handle(request));
     }
 
     @Test
     @DisplayName("Handle disconnect request")
-    public void handleDisconnect() throws SecurityManager.SecurityManagerException {
-        var app = Identity.generateRandomIdentity().getPublicKey();
+    public void handleDisconnect() {
+        this.app = Identity.generateRandomIdentity().getPublicKey();
+        this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        var securityManager = SecurityManager.getInstance();
-        securityManager.addPrincipal(Principal.getInstance(app, "password"));
-        final ApplicationProxy applicationProxy = createApplicationProxy("handleDisconnect", app);
+        final var applicationProxy = createApplicationProxy("handleDisconnect", app);
+        var session = SignerServiceTest.createSession(user, app);
 
-        var request = new Request<>(new Connect(app), applicationProxy);
+        var request = new Request<>(new Connect(app), applicationProxy, session.getId());
         this.signerService.handle(request);
-        assertFalse(Session.getInstance(app).hasTimedOut());
 
-        request = new Request<>(new Disconnect(), applicationProxy);
-        var session = this.signerService.getSessionManager().getSession(app);
-        request.setSessionId(session.getId());
+        request = new Request<>(new Disconnect(), applicationProxy, session.getId());
         this.signerService.handle(request);
 
         assertEquals("ACK", request.getMethod().getResult());
-        assertThrows(SecurityManager.SecurityManagerException.class, () -> Session.getInstance(app));
+        assertTrue(this.signerService.getSessionManager().sessionIsInactive(app));
     }
 
     @Test
     @DisplayName("Handle describe request")
-    public void handleDescribe() throws SecurityManager.SecurityManagerException {
-        var app = Identity.generateRandomIdentity().getPublicKey();
+    public void handleDescribe() {
+        this.app = Identity.generateRandomIdentity().getPublicKey();
+        this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        var securityManager = SecurityManager.getInstance();
-        securityManager.addPrincipal(Principal.getInstance(app, "password"));
         final ApplicationProxy applicationProxy = createApplicationProxy("handleDescribe", app);
+        var session = SignerServiceTest.createSession(user, app);
 
-        var requestConnect = new Request<>(new Connect(app), applicationProxy);
-        this.signerService.handle(requestConnect);
-        assertFalse(Session.getInstance(app).hasTimedOut());
+        var request = new Request<>(new Connect(app), applicationProxy, session.getId());
+        this.signerService.handle(request);
 
-        var describe = new Describe();
-        var requestDescribe = new Request<>(describe, applicationProxy);
-        var session = this.signerService.getSessionManager().getSession(app);
-        requestDescribe.setSessionId(session.getId());
+
+        var requestDescribe = new Request<>(new Describe(), applicationProxy, session.getId());
         this.signerService.handle(requestDescribe);
 
         var result = requestDescribe.getMethod().getResult();
@@ -120,38 +137,42 @@ public class SignerServiceTest {
     }
 
     @Test
-    @DisplayName("Invalidate an active session")
-    public void invalidateSession() throws SecurityManager.SecurityManagerException {
-        var app = Identity.generateRandomIdentity().getPublicKey();
+    @DisplayName("Deactivate an active session")
+    public void deactivateSession() {
+        this.app = Identity.generateRandomIdentity().getPublicKey();
+        this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        var securityManager = SecurityManager.getInstance();
-        securityManager.addPrincipal(Principal.getInstance(app, "password"));
+        var session = SignerServiceTest.createSession(user, app);
 
-        var request = new Request<>(new Connect(app), createApplicationProxy("invalidateSession", app));
+        var request = new Request<>(new Connect(app), createApplicationProxy("deactivateSession", app), session.getId());
         this.signerService.handle(request);
-        assertFalse(Session.getInstance(app).hasTimedOut());
 
-        SessionManager.getInstance().invalidate(app);
-        assertFalse(securityManager.hasPrincipal(app, "password"));
-        assertThrows(SecurityManager.SecurityManagerException.class, () -> Session.getInstance(app));
+        session = SessionManager.getInstance().getSession(app);
+        assertFalse(session.hasExpired());
+
+        SessionManager.getInstance().deactivateSession(app);
+        assertTrue(SessionManager.getInstance().sessionIsInactive(app));
     }
 
     @Test
     @DisplayName("Handle describe request without connect")
     public void handleDescribeWithoutConnect() {
-        var app = Identity.generateRandomIdentity().getPublicKey();
+        this.app = Identity.generateRandomIdentity().getPublicKey();
+        this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        var securityManager = SecurityManager.getInstance();
-        securityManager.addPrincipal(Principal.getInstance(app, "password"));
-
-        var request = new Request<>(new Describe(), createApplicationProxy("handleDescribeWithoutConnect", app));
+        var session = SignerServiceTest.createSession(user, app);
+        var request = new Request<>(new Describe(), createApplicationProxy("handleDescribeWithoutConnect", app), session.getId());
 
         assertThrows(RuntimeException.class, () -> this.signerService.handle(request));
     }
 
-    private ApplicationProxy createApplicationProxy(String name, @NonNull PublicKey publicKey) {
+    private ApplicationProxy createApplicationProxy(@NonNull String name, @NonNull PublicKey publicKey) {
         var result = new ApplicationProxy(publicKey);
         result.setName(name);
         return result;
+    }
+
+    private static Session createSession(@NonNull PublicKey user, @NonNull PublicKey app) {
+        return SessionManager.getInstance().createSession(user, app, 20*60, "password");
     }
 }

@@ -8,8 +8,6 @@ import nostr.base.PrivateKey;
 import nostr.base.PublicKey;
 import nostr.si4n6r.core.impl.AccountProxy;
 import nostr.si4n6r.core.impl.ApplicationProxy;
-import nostr.si4n6r.core.impl.Principal;
-import nostr.si4n6r.core.impl.SecurityManager;
 import nostr.si4n6r.util.EncryptionUtil;
 import nostr.si4n6r.util.Util;
 
@@ -67,15 +65,17 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
     }
 
     @Override
-    public String retrieve(@NonNull AccountProxy account) {
+    public String retrieve(@NonNull AccountProxy account, @NonNull String password) {
         String baseDirectory = getBaseDirectory(account);
         Path privateKeyPath = Path.of(baseDirectory, "nsec.bin");
 
         if (Files.exists(privateKeyPath)) {
             try {
+/*
                 var securityManager = SecurityManager.getInstance();
                 var principal = securityManager.getPrincipal(new PublicKey(account.getPublicKey()));
-                var nsec = principal.decryptNsec();
+*/
+                var nsec = EncryptionUtil.decryptNsec(new PublicKey(account.getPublicKey()), password);
                 return nsec.toString();
             } catch (Exception ex) {
                 log.log(Level.SEVERE, String.format("Failed to decrypt the nsec for %s", account.getPublicKey()), ex);
@@ -126,7 +126,7 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
     private static byte[] _getNsec(AccountProxy account, @NonNull String password) throws Exception {
         var publicKey = EncryptionUtil.generateAndSavePrivateKey(getPrivateKeyFile(new PublicKey(account.getPublicKey())), password) ;
-        return Principal.encryptNsec(new PrivateKey(account.getPrivateKey()), publicKey);
+        return EncryptionUtil.encryptNsec(new PrivateKey(account.getPrivateKey()), publicKey);
     }
 
     private static String _createAccountApplicationsBaseDir(@NonNull AccountProxy account) throws IOException {

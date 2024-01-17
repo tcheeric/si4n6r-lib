@@ -11,12 +11,13 @@ import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
 import nostr.si4n6r.core.IMethod;
-import nostr.si4n6r.core.impl.SecurityManager;
 import nostr.si4n6r.core.impl.*;
 import nostr.si4n6r.signer.methods.*;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 
 import static nostr.si4n6r.core.IMethod.Constants.*;
@@ -57,9 +58,9 @@ public class SignerService {
      * Signer-initiated connection to an application.
      *
      * @param app the application to connect to
-     * @throws nostr.si4n6r.core.impl.SecurityManager.SecurityManagerException
      */
-    public void doConnect(@NonNull ApplicationProxy app) throws SecurityManager.SecurityManagerException {
+    public void doConnect(@NonNull ApplicationProxy app) {
+/*
         final PublicKey appPublicKey = new PublicKey(app.getPublicKey());
         IMethod<String> connect = new Connect(appPublicKey);
         var request = new Request<>(connect, app);
@@ -75,99 +76,86 @@ public class SignerService {
 
         Nostr.sign(signer.getIdentity(), event);
         Nostr.send(event);
+*/
     }
 
-    // TODO - Does not need to be public. Package protected?
     /**
      * Handling app-initiated requests and submit a corresponding response back.
      *
      * @param request the request to handle and respond to.
-     * @throws nostr.si4n6r.core.impl.SecurityManager.SecurityManagerException
      */
-    public void handle(@NonNull Request request) throws SecurityManager.SecurityManagerException {
+    public void handle(@NonNull Request request) {
+
+        var method = request.getMethod();
+        var appProxy = request.getInitiator();
 
         log.log(Level.INFO, "Handling {0}", request);
 
-        var app = request.getInitiator();
-        var appPublicKey = new PublicKey(app.getPublicKey());
-        var method = request.getMethod();
-
-        if (!METHOD_CONNECT.equals(method.getName())) {
-            validateSession(request, new PublicKey(app.getPublicKey()));
-        }
+        validateSession(request);
 
         GenericEvent event = null;
         Response response = null;
         var sender = signer.getIdentity();
+        var app = new PublicKey(appProxy.getPublicKey());
 
         switch (method.getName()) {
             case METHOD_DESCRIBE -> {
-                if (method instanceof Describe describe && this.sessionManager.hasActiveSession(appPublicKey)) {
-                    doDescribe(describe);
+                if (method instanceof Describe describe) {
+                    doDescribe(describe, app);
                     response = new Response(request.getId(), METHOD_DESCRIBE, describe.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DESCRIBE, response.getResult().toString(), null, request.getSessionId()), sender, appPublicKey);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DESCRIBE, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_DISCONNECT -> {
-                if (method instanceof Disconnect disconnect && this.sessionManager.hasActiveSession(appPublicKey)) {
-                    doDisconnect(disconnect, appPublicKey);
+                if (method instanceof Disconnect disconnect) {
+                    doDisconnect(disconnect, app);
                     response = new Response(request.getId(), METHOD_DISCONNECT, disconnect.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DISCONNECT, response.getResult().toString(), null, request.getSessionId()), sender, appPublicKey);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_DISCONNECT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_CONNECT -> {
-                if (method instanceof Connect connect && !this.sessionManager.hasActiveSession(appPublicKey)) {
-                    doConnect(connect, appPublicKey);
+                if (method instanceof Connect connect) {
+                    doConnect(connect, app);
                     response = new Response(request.getId(), METHOD_CONNECT, connect.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_CONNECT, response.getResult().toString(), null, request.getSessionId()), sender, appPublicKey);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_CONNECT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_GET_PUBLIC_KEY -> {
-                if (method instanceof GetPublicKey getPublicKey && this.sessionManager.hasActiveSession(appPublicKey)) {
+                if (method instanceof GetPublicKey getPublicKey) {
                     getPublicKey.setResult(signer.getIdentity().getPublicKey());
                     response = new Response(request.getId(), METHOD_GET_PUBLIC_KEY, getPublicKey.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_GET_PUBLIC_KEY, response.getResult().toString(), null, request.getSessionId()), sender, appPublicKey);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_GET_PUBLIC_KEY, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
             case METHOD_SIGN_EVENT -> {
-                if (method instanceof SignEvent signEvent && this.sessionManager.hasActiveSession(appPublicKey)) {
+                if (method instanceof SignEvent signEvent) {
                     IEvent paramEvent = (IEvent) signEvent.getParameter("pubkey").get();
                     Nostr.sign((ISignable) paramEvent);
                     signEvent.setResult(paramEvent);
                     response = new Response(request.getId(), METHOD_SIGN_EVENT, signEvent.getResult());
-                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_SIGN_EVENT, response.getResult().toString(), null, request.getSessionId()), sender, appPublicKey);
+                    event = NIP46.createResponseEvent(new NIP46.NIP46Response(response.getId(), METHOD_SIGN_EVENT, response.getResult().toString(), null, request.getSessionId()), sender, app);
                 }
             }
-            default ->
-                throw new RuntimeException("Invalid request: " + request);
+            default -> throw new RuntimeException("Invalid request: " + request);
         }
 
         if (event == null) {
             throw new RuntimeException("Invalid request: " + request);
         }
 
-        sessionManager.addResponse(response, appPublicKey);
-        sessionManager.addRequest(request, appPublicKey);
+        sessionManager.addResponse(response, app);
+        sessionManager.addRequest(request, app);
 
-        log.log(Level.INFO, "Submitting event {0}", event);
-
+        log.log(Level.FINE, "Submitting event {0} to relay(s)", event);
         Nostr.sign(sender, event);
         Nostr.send(event);
-
-        cleanup(method, appPublicKey);
     }
 
-    private void cleanup(@NonNull IMethod method, @NonNull PublicKey app) {
-        if (METHOD_DISCONNECT.equals(method.getName())) {
-            this.sessionManager.invalidate(app);
-            //this.sessionManager.removeSession(this.sessionManager.getSession(app));
-        }
-    }
-
-    private void validateSession(Request request, PublicKey app) {
-        Session session = sessionManager.getSession(new PublicKey(request.getInitiator().getPublicKey()));
-        boolean hasActiveSession = this.sessionManager.hasActiveSession(app);
-        String sessionId = request.getSessionId();
+    private void validateSession(Request request) {
+        var app = new PublicKey(request.getInitiator().getPublicKey());
+        var session = sessionManager.getSession(app);
+        var hasActiveSession = this.sessionManager.sessionIsActive(app);
+        var sessionId = request.getSessionId();
 
         if (sessionId != null && !session.getId().equals(sessionId)) {
             throw new RuntimeException(String.format("Failed validation: Invalid session id %s for %s.", sessionId, app));
@@ -178,32 +166,90 @@ public class SignerService {
         }
     }
 
-    private void doDisconnect(@NonNull PublicKey app) {
-        sessionManager.invalidate(app);
-        log.log(Level.WARNING, "App {0} disconnected!", app);
-    }
-
     // TODO - Add the additional methods as they get implemented.
     // TODO - For later: dynamically retrieve the names from the list of concrete classes implementing the IMethod interface
-    private void doDescribe(@NonNull IMethod method) {
+    private void doDescribe(@NonNull IMethod method, @NonNull PublicKey app) {
+        if (!isConnected(app)) {
+            throw new RuntimeException(String.format("Failed to describe: %s is not connected!", app));
+        }
+
         List<String> result = new ArrayList<>();
         result.add(METHOD_DESCRIBE);
         result.add(METHOD_CONNECT);
-        result.add(METHOD_DISCONNECT);        
+        result.add(METHOD_DISCONNECT);
 
         log.log(Level.INFO, "describe: {0}", result);
         ((Describe) method).setResult(result);
     }
 
-    private void doConnect(@NonNull IMethod method, @NonNull PublicKey app) throws SecurityManager.SecurityManagerException {
-        this.sessionManager.addSession(Session.getInstance(app));
+    private void doConnect(@NonNull IMethod method, @NonNull PublicKey app) {
+        if (isConnected(app)) {
+            throw new RuntimeException(String.format("Failed to connect: %s is already connected!", app));
+        }
+
+        this.sessionManager.activateSession(app);
         log.log(Level.INFO, "ACK: {0} connected!", app);
         ((Connect) method).setResult("ACK");
+
     }
 
     private void doDisconnect(@NonNull IMethod method, @NonNull PublicKey app) {
-        this.sessionManager.invalidate(app);
+        if (!isConnected(app)) {
+            throw new RuntimeException(String.format("Failed to disconnect: %s is not connected!", app));
+        }
+        this.sessionManager.deactivateSession(app);
         log.log(Level.INFO, "ACK: {0} disconnected!", app);
         ((Disconnect) method).setResult("ACK");
     }
+
+    // TODO - Implement the method. Check is a connection already exists for the app.
+    private boolean isConnected(@NonNull PublicKey app) {
+        var session = getSession(app);
+
+        var request = getMostRecentConnectRequest(session);
+        if (!request.isPresent()) {
+            return false;
+        }
+
+        var response = getResponseForRequest(request);
+
+        return response != null && response.getResult().equals("ACK");
+    }
+
+    private Optional<Request> getMostRecentConnectRequest(@NonNull Session session) {
+        var requests = session.getRequests();
+
+        return requests.stream()
+                .filter(request -> request.getMethod() instanceof Connect)
+                .max(Comparator.comparing(Request::getTimestamp));
+    }
+
+    private Response getResponseForRequest(Optional<Request> requestOptional) {
+        if (!requestOptional.isPresent()) {
+            return null; // or throw an exception
+        }
+
+        var request = requestOptional.get();
+        var session = sessionManager.getSession(new PublicKey(request.getInitiator().getPublicKey()));
+        var responses = session.getResponses();
+        var responseOptional = responses.stream()
+                .filter(response -> response.getId().equals(request.getId()))
+                .findFirst();
+
+        if (responseOptional.isPresent()) {
+            Response response = responseOptional.get();
+            if (request.getTimestamp().after(response.getTimestamp())) {
+                throw new RuntimeException("Request was emitted after the response");
+            }
+            return response;
+        }
+
+        return null;
+    }
+
+    private Session getSession(PublicKey appPublicKey) {
+        var sessionManager = SessionManager.getInstance();
+        return sessionManager.getSession(appPublicKey);
+    }
+
 }
