@@ -36,7 +36,11 @@
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>${bouncy-castle.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>${java-jwt.version}</version>
+        </dependency>
     </dependencies>
     <properties>
         <maven.compiler.source>19</maven.compiler.source>

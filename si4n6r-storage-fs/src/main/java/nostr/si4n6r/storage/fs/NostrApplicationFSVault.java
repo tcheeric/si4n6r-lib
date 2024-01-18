@@ -54,7 +54,7 @@ public class NostrApplicationFSVault extends BaseFSVault<ApplicationProxy> {
     }
 
     @Override
-    public String retrieve(@NonNull ApplicationProxy application) {
+    public String retrieve(@NonNull ApplicationProxy application, String password) {
         var baseDirectory = getBaseDirectory(application);
         Path metadataPath = Path.of(baseDirectory, "metadata.json");
 
