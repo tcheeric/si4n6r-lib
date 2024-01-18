@@ -71,10 +71,6 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
         if (Files.exists(privateKeyPath)) {
             try {
-/*
-                var securityManager = SecurityManager.getInstance();
-                var principal = securityManager.getPrincipal(new PublicKey(account.getPublicKey()));
-*/
                 var nsec = EncryptionUtil.decryptNsec(new PublicKey(account.getPublicKey()), password);
                 return nsec.toString();
             } catch (Exception ex) {

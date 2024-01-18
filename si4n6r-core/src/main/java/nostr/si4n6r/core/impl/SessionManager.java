@@ -66,16 +66,6 @@ public class SessionManager {
         response.setSessionId(session.getId());
     }
 
-    // TODO - Instead of removing the session, introduce a status (VALID, INVALID) and set it to INVALID
-/*
-    public void invalidate(@NonNull PublicKey publicKey) {
-
-        var session = getSession(publicKey);
-        session.setStatus(Session.Status.INACTIVE);
-        //removeSession(session);
-    }
-*/
-
     public boolean addSession(@NonNull Session session) {
         if (this.sessions.contains(session)) {
             return false;
@@ -109,46 +99,12 @@ public class SessionManager {
         return session.getStatus().equals(Session.Status.NEW);
     }
 
-/*
-    public boolean addSession(@NonNull PublicKey publicKey) throws SecurityManager.SecurityManagerException {
-        var session = Session.getInstance(publicKey);
-        return addSession(session);
-    }
-
-    public boolean removeSession(@NonNull Session session) {
-        if (!this.sessions.contains(session)) {
-            return false;
-        }
-        this.sessions.remove(session);
-        return true;
-    }
-
-    public boolean removeSession(@NonNull PublicKey publicKey) {
-        try {
-            var session = getSession(publicKey);
-            return this.removeSession(session);
-        } catch (RuntimeException ex) {
-            return false;
-        }
-    }
-*/
-
     public Session getSession(@NonNull PublicKey publicKey) {
         return sessions.stream()
                 .filter(session -> session.getApp().equals(publicKey))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Session not found!"));
     }
-
-/*
-    public boolean hasActiveSession(@NonNull PublicKey publicKey) {
-        var optSession = sessions.stream()
-                .filter(session -> session.getApp().equals(publicKey))
-                .findFirst();
-
-        return optSession.isPresent() && optSession.get().getStatus().equals(Session.Status.ACTIVE);
-    }
-*/
 
     boolean hasExpired(@NonNull PublicKey publicKey) {
         Session session;
