@@ -146,33 +146,4 @@ public class SignerCommandHandler implements ICommandHandler {
         }
     }
 
-/*
-    private void handleKind4(GenericEvent event, Signer signer) {
-        String content;
-        try {
-            content = NIP04.decrypt(signer.getIdentity(), event);
-        } catch (NostrException e) {
-            throw new RuntimeException(e);
-        }
-        log.log(Level.INFO, "Content: {0}", content);
-
-        if (content != null) {
-            var om = new ObjectMapper();
-            try {
-                Map<String, Object> jsonMap = om.readValue(content, Map.class);
-                var npub = jsonMap.get("npub").toString();
-                var hashedPassword = jsonMap.get("password").toString();
-                var hashedOtp = jsonMap.get("otp").toString();
-
-                var principal = SecurityManager.getInstance().getPrincipal(new PublicKey(npub));
-                if (!hashedPassword.equals(EncryptionUtil.hashSHA256(principal.getPassword()))) {
-                    throw new RuntimeException("Invalid password");
-                }
-            } catch (JsonProcessingException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-    }
-*/
-
 }
