@@ -3,6 +3,7 @@ package nostr.si4n6r.core.impl.methods;
 import nostr.api.NIP01;
 import nostr.base.PublicKey;
 import nostr.event.impl.GenericEvent;
+import nostr.id.Identity;
 import nostr.si4n6r.core.IMethod;
 import nostr.si4n6r.signer.methods.*;
 import org.junit.jupiter.api.DisplayName;
@@ -36,10 +37,11 @@ public class MethodTest {
     @Test
     @DisplayName("Test disconnect method")
     public void disconnect() {
-        var disconnect = new Disconnect();
+        var disconnect = new Disconnect(new PublicKey("9cb64796ed2c5f18846082cae60c3a18d7a506702cdff0276f86a2ea68a94123"));
 
-        assertEquals(IMethod.Constants.METHOD_DISCONNECT, disconnect.getName());
-        assertEquals(0, disconnect.getParams().size());
+        assertEquals("disconnect", disconnect.getName());
+        assertEquals(1, disconnect.getParams().size());
+        assertEquals("9cb64796ed2c5f18846082cae60c3a18d7a506702cdff0276f86a2ea68a94123", disconnect.getParams().get(0).get().toString());
     }
 
     @Test

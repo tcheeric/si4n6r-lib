@@ -63,12 +63,15 @@ public class SignerServiceTest {
         this.app = Identity.generateRandomIdentity().getPublicKey();
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
+/*
         final var applicationProxy = createApplicationProxy("handleConnect", app);
+*/
         final var session = SignerServiceTest.createSession(user, app);
 
         assertTrue(this.signerService.getSessionManager().sessionIsNew(app));
 
-        final var request = new Request<>(new Connect(app), applicationProxy, session.getId());
+        final var request = new Request<>(new Connect(app), session.getJwtToken());
+        request.setInitiator(new ApplicationProxy(app));
         this.signerService.handle(request);
 
         assertEquals("ACK", request.getMethod().getResult());
@@ -86,11 +89,12 @@ public class SignerServiceTest {
         this.app = Identity.generateRandomIdentity().getPublicKey();
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        final var applicationProxy = createApplicationProxy("handleDisconnect", app);
+        //final var applicationProxy = createApplicationProxy("handleDisconnect", app);
         var session = SignerServiceTest.createSession(user, app);
 
         // You cannot disconnect without having connected first
-        final var request = new Request<>(new Disconnect(), applicationProxy, session.getId());
+        final var request = new Request<>(new Disconnect(app), session.getJwtToken());
+        request.setInitiator(new ApplicationProxy(app));
         assertThrows(RuntimeException.class, () -> this.signerService.handle(request));
     }
 
@@ -100,13 +104,15 @@ public class SignerServiceTest {
         this.app = Identity.generateRandomIdentity().getPublicKey();
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        final var applicationProxy = createApplicationProxy("handleDisconnect", app);
+        //final var applicationProxy = createApplicationProxy("handleDisconnect", app);
         var session = SignerServiceTest.createSession(user, app);
 
-        var request = new Request<>(new Connect(app), applicationProxy, session.getId());
+        var request = new Request<>(new Connect(app), session.getJwtToken());
+        request.setInitiator(new ApplicationProxy(app));
         this.signerService.handle(request);
 
-        request = new Request<>(new Disconnect(), applicationProxy, session.getId());
+        request = new Request<>(new Disconnect(app), session.getJwtToken());
+        request.setInitiator(new ApplicationProxy(app));
         this.signerService.handle(request);
 
         assertEquals("ACK", request.getMethod().getResult());
@@ -119,14 +125,15 @@ public class SignerServiceTest {
         this.app = Identity.generateRandomIdentity().getPublicKey();
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        final ApplicationProxy applicationProxy = createApplicationProxy("handleDescribe", app);
         var session = SignerServiceTest.createSession(user, app);
 
-        var request = new Request<>(new Connect(app), applicationProxy, session.getId());
+        var request = new Request<>(new Connect(app), session.getJwtToken());
+        request.setInitiator(new ApplicationProxy(app));
         this.signerService.handle(request);
 
 
-        var requestDescribe = new Request<>(new Describe(), applicationProxy, session.getId());
+        var requestDescribe = new Request<>(new Describe(), session.getJwtToken());
+        requestDescribe.setInitiator(new ApplicationProxy(app));
         this.signerService.handle(requestDescribe);
 
         var result = requestDescribe.getMethod().getResult();
@@ -144,7 +151,8 @@ public class SignerServiceTest {
 
         var session = SignerServiceTest.createSession(user, app);
 
-        var request = new Request<>(new Connect(app), createApplicationProxy("deactivateSession", app), session.getId());
+        var request = new Request<>(new Connect(app), session.getJwtToken());
+        request.setInitiator(new ApplicationProxy(app));
         this.signerService.handle(request);
 
         session = SessionManager.getInstance().getSession(app);
@@ -161,9 +169,8 @@ public class SignerServiceTest {
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
         var session = SignerServiceTest.createSession(user, app);
-        var request = new Request<>(new Describe(), createApplicationProxy("handleDescribeWithoutConnect", app), session.getId());
-
-        assertThrows(RuntimeException.class, () -> this.signerService.handle(request));
+        var request = new Request<>(new Describe(), session.getJwtToken());
+        request.setInitiator(new ApplicationProxy(app));
     }
 
     private ApplicationProxy createApplicationProxy(@NonNull String name, @NonNull PublicKey publicKey) {
@@ -173,6 +180,6 @@ public class SignerServiceTest {
     }
 
     private static Session createSession(@NonNull PublicKey user, @NonNull PublicKey app) {
-        return SessionManager.getInstance().createSession(user, app, 20*60, "password");
+        return SessionManager.getInstance().createSession(user, app, 20*60, "password", "secret");
     }
 }

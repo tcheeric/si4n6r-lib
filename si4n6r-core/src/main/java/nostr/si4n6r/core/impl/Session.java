@@ -39,7 +39,7 @@ public class Session {
     @ToString.Exclude
     private final List<Response> responses;
 
-    Session(@NonNull PublicKey user, @NonNull PublicKey app, int timeout, String password) {
+    Session(@NonNull PublicKey user, @NonNull PublicKey app, int timeout, String password, String secret) {
         log.log(Level.INFO, "Creating new session...");
 
         this.id = UUID.randomUUID().toString();
@@ -50,8 +50,9 @@ public class Session {
                 password,
                 app,
                 "si4n6r",
-                "si4n6r",
+                secret,
                 timeout);
+        log.log(Level.INFO, "Created JWT: {0}", jwtToken);
         this.app = app;
         this.requests = new ArrayList<>();
         this.responses = new ArrayList<>();

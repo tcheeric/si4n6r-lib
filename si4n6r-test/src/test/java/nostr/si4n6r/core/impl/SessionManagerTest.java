@@ -22,7 +22,7 @@ public class SessionManagerTest {
     public void setUp() {
         this.sessionManager = SessionManager.getInstance();
         this.publicKey = new PublicKey("9cb64796ed2c5f18846082cae60c3a18d7a506702cdff0276f86a2ea68a94123");
-        this.sessionManager.createSession(Identity.generateRandomIdentity().getPublicKey(), publicKey, 20*60, "password");
+        this.sessionManager.createSession(Identity.generateRandomIdentity().getPublicKey(), publicKey, 20*60, "password", "secret");
     }
 
     @Test
@@ -38,15 +38,10 @@ public class SessionManagerTest {
     @Test
     @DisplayName("Add a request to the session")
     public void addRequest() {
-        var appProxy = new ApplicationProxy(publicKey);
-        appProxy.setId(System.currentTimeMillis());
-        appProxy.setName("addRequest");
-
         var session = this.sessionManager.getSession(this.publicKey);
-        var request = new Request<>(new Connect(this.publicKey), appProxy, session.getId());
+        var request = new Request<>(new Connect(this.publicKey), session.getJwtToken());
         this.sessionManager.addRequest(request, this.publicKey);
 
         assertTrue(session.getRequests().contains(request));
-        assertEquals(session.getId(), request.getSessionId());
     }
 }

@@ -16,10 +16,9 @@ public class Response {
     private String method;
     private Object result;
     private String error;
-    private String sessionId;
     private Date timestamp;
 
     public Response(@NonNull String id, @NonNull String method, @NonNull Object result) {
-        this(id, method, result, null, null, new Date());
+        this(id, method, result, null, new Date());
     }
 }

@@ -31,8 +31,9 @@ public class SessionManager {
             @NonNull PublicKey user,
             @NonNull PublicKey app,
             int timeout,
-            @NonNull String password) {
-        var session = new Session(user, app, timeout, password);
+            @NonNull String password,
+            @NonNull String secret) {
+        var session = new Session(user, app, timeout, password, secret);
         addSession(session);
         return session;
     }
@@ -49,7 +50,7 @@ public class SessionManager {
 
         log.log(Level.FINE, "Linking request {0} to session {1}", new Object[]{request, session.getId()});
         requests.add(request);
-        request.setSessionId(session.getId());
+        //request.setJwt(session.getJwtToken());
     }
 
     public void addResponse(@NonNull Response response, @NonNull PublicKey publicKey) {
@@ -63,7 +64,7 @@ public class SessionManager {
 
         log.log(Level.FINER, "Adding response {0} to session {1}", new Object[]{response, session.getId()});
         responses.add(response);
-        response.setSessionId(session.getId());
+        //response.setJwt(session.getId());
     }
 
     public boolean addSession(@NonNull Session session) {

@@ -84,7 +84,7 @@ public class SignerCommandHandler implements ICommandHandler {
                         nip46Request.getMethod(),
                         nip46Request.getParams()
                 ),
-                nip46Request.getSessionId(),
+                nip46Request.getJwt(),
                 new Date()
         );
     }
@@ -97,8 +97,9 @@ public class SignerCommandHandler implements ICommandHandler {
                 return new Connect(publicKey);
             }
             case IMethod.Constants.METHOD_DISCONNECT -> {
-                assert (params.isEmpty());
-                return new Disconnect();
+                assert (params.size() == 1);
+                var publicKey = getPublicKey(params.get(0));
+                return new Disconnect(publicKey);
             }
             case IMethod.Constants.METHOD_DESCRIBE -> {
                 assert (params.isEmpty());
@@ -134,7 +135,7 @@ public class SignerCommandHandler implements ICommandHandler {
 
         if (content != null) {
             var nip46Request = NIP46.NIP46Request.fromString(content);
-            Request request = toRequest(nip46Request, app);
+            var request = toRequest(nip46Request, app);
             var sessionManager = SessionManager.getInstance();
 
             log.log(Level.INFO, "Request: {0}", request);

@@ -13,16 +13,16 @@ import java.util.UUID;
 public class Request<T, U extends BaseActorProxy> {
 
     private final String id;
-    private final U initiator;
+    private U initiator;
     private final IMethod<T> method;
-    private String sessionId;
+    private String jwt;
     private final Date timestamp;
 
-    public Request(@NonNull IMethod<T> method, @NonNull U initiator) {
-        this(UUID.randomUUID().toString(), initiator, method, null, new Date());
+    public Request(@NonNull IMethod<T> method) {
+        this(method, null);
     }
 
-    public Request(@NonNull IMethod<T> method, @NonNull U initiator, @NonNull String sessionId) {
-        this(UUID.randomUUID().toString(), initiator, method, sessionId, new Date());
+    public Request(@NonNull IMethod<T> method, @NonNull String jwt) {
+        this(UUID.randomUUID().toString(), null, method, jwt, new Date());
     }
 }
