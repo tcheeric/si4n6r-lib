@@ -1,4 +1,4 @@
-package nostr.si4n6r.core.impl;
+package nostr.si4n6r.storage.common;
 
 import lombok.Data;
 
@@ -8,6 +8,6 @@ public abstract class BaseActorProxy {
     public static String VAULT_ACTOR_ACCOUNT = "account";
     public static String VAULT_ACTOR_APPLICATION = "application";
 
-    private Long id;
+    private String id;
     private String publicKey;
 }

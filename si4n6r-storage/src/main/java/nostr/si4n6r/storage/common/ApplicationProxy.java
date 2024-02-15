@@ -1,7 +1,11 @@
-package nostr.si4n6r.core.impl;
+package nostr.si4n6r.storage.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import nostr.base.PublicKey;
 
 import java.util.List;

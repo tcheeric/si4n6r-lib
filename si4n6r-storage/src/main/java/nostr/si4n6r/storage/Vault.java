@@ -1,6 +1,6 @@
 package nostr.si4n6r.storage;
 
-import nostr.si4n6r.core.impl.BaseActorProxy;
+import nostr.si4n6r.storage.common.BaseActorProxy;
 
 public interface Vault<T extends BaseActorProxy> {
 
