@@ -1,8 +1,13 @@
 package nostr.si4n6r.signer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.java.Log;
+import nostr.api.NIP01;
 import nostr.api.NIP46;
 import nostr.api.Nostr;
 import nostr.base.IEvent;
@@ -10,17 +15,22 @@ import nostr.base.ISignable;
 import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
-import nostr.si4n6r.core.IMethod;
-import nostr.si4n6r.core.impl.*;
-import nostr.si4n6r.signer.methods.*;
+import nostr.event.json.codec.GenericEventDecoder;
+import nostr.si4n6r.model.Session;
+import nostr.si4n6r.model.dto.*;
+import nostr.si4n6r.rest.client.ParameterRestClient;
+import nostr.si4n6r.rest.client.RequestRestClient;
+import nostr.si4n6r.rest.client.ResponseRestClient;
+import nostr.si4n6r.rest.client.SessionManager;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Base64;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.logging.Level;
 
-import static nostr.si4n6r.core.IMethod.Constants.*;
+import static nostr.si4n6r.model.dto.MethodDto.MethodType.DESCRIBE;
+import static nostr.si4n6r.model.dto.MethodDto.MethodType.DISCONNECT;
 
 @Data
 @Log
@@ -59,8 +69,8 @@ public class SignerService {
      *
      * @param app the application to connect to
      */
-    public void doConnect(@NonNull ApplicationProxy app) {
-/*
+/*    public void doConnect(@NonNull ApplicationProxy app) {
+
         final PublicKey appPublicKey = new PublicKey(app.getPublicKey());
         IMethod<String> connect = new Connect(appPublicKey);
         var request = new Request<>(connect, app);
@@ -76,117 +86,94 @@ public class SignerService {
 
         Nostr.sign(signer.getIdentity(), event);
         Nostr.send(event);
-*/
-    }
+
+    }*/
 
     /**
      * Handling app-initiated requests and submit a corresponding response back.
      *
      * @param request the request to handle and respond to.
      */
-    public void handle(@NonNull Request request) {
+    public ResponseDto handle(@NonNull RequestDto request) {
 
         var method = request.getMethod();
-        var appProxy = request.getInitiator();
+        var app = request.getInitiator();
 
         log.log(Level.INFO, "Handling {0}", request);
 
         validateSession(request);
 
-        GenericEvent event = null;
-        Response response = null;
+        GenericEvent event;
+        ResponseDto response;
         var sender = signer.getIdentity();
-        //var app = new PublicKey(appProxy.getPublicKey());
 
         switch (method.getName()) {
-            case METHOD_DESCRIBE -> {
-                if (method instanceof Describe describe) {
-                    doDescribe(describe);
-                    response = new Response(request.getId(), METHOD_DESCRIBE, describe.getResult());
-                    event = NIP46.createResponseEvent(
-                            new NIP46.NIP46Response(
-                                    response.getId(),
-                                    METHOD_DESCRIBE,
-                                    response.getResult().toString(),
-                                    null,
-                                    request.getJwt()
-                            ),
-                            sender,
-                            new PublicKey(request.getInitiator().getPublicKey())
-                    );
-                }
+            case "describe" -> {
+                var result = doDescribe(app);
+                response = new ResponseDto(request);
+                response.setResult(Result.toJson(result));
+                var restClient = new ResponseRestClient();
+                response = restClient.create(response);
+
+                sessionManager.addResponse(response, app);
+
+                event = NIP46.createResponseEvent(
+                        toResponse(response),
+                        sender,
+                        new PublicKey(request.getInitiator())
+                );
             }
-            case METHOD_DISCONNECT -> {
-                if (method instanceof Disconnect disconnect) {
-                    var app = disconnect.getParameter("pubkey").get().toString();
-                    doDisconnect(disconnect, new PublicKey(app));
-                    response = new Response(request.getId(), METHOD_DISCONNECT, disconnect.getResult());
-                    event = NIP46.createResponseEvent(
-                            new NIP46.NIP46Response(
-                                    response.getId(),
-                                    METHOD_DISCONNECT,
-                                    response.getResult().toString(),
-                                    null,
-                                    request.getJwt()
-                            ),
-                            sender,
-                            new PublicKey(app)
-                    );
-                }
+            case "disconnect" -> {
+                var result = doDisconnect(request);
+                response = new ResponseDto(request);
+                response.setResult(Result.toJson(result));
+                var restClient = new ResponseRestClient();
+                response = restClient.create(response);
+
+                event = NIP46.createResponseEvent(
+                        toResponse(response),
+                        sender,
+                        new PublicKey(app)
+                );
             }
-            case METHOD_CONNECT -> {
-                if (method instanceof Connect connect) {
-                    var app = connect.getParameter("pubkey").get().toString();
-                    doConnect(connect, new PublicKey(app));
-                    response = new Response(request.getId(), METHOD_CONNECT, connect.getResult());
-                    event = NIP46.createResponseEvent(
-                            new NIP46.NIP46Response(
-                                    response.getId(),
-                                    METHOD_CONNECT,
-                                    response.getResult().toString(),
-                                    null,
-                                    request.getJwt()
-                            ),
-                            sender,
-                            new PublicKey(app)
-                    );
-                }
+            case "connect" -> {
+                var result = doConnect(request);
+                response = new ResponseDto(request);
+                response.setResult(Result.toJson(result));
+                var restClient = new ResponseRestClient();
+                response = restClient.create(response);
+
+                event = NIP46.createResponseEvent(
+                        toResponse(response),
+                        sender,
+                        new PublicKey(app)
+                );
             }
-            case METHOD_GET_PUBLIC_KEY -> {
-                if (method instanceof GetPublicKey getPublicKey) {
-                    getPublicKey.setResult(signer.getIdentity().getPublicKey());
-                    response = new Response(request.getId(), METHOD_GET_PUBLIC_KEY, getPublicKey.getResult());
-                    event = NIP46.createResponseEvent(
-                            new NIP46.NIP46Response(
-                                    response.getId(),
-                                    METHOD_GET_PUBLIC_KEY,
-                                    response.getResult().toString(),
-                                    null,
-                                    request.getJwt()
-                            ),
-                            sender,
-                            new PublicKey(request.getInitiator().getPublicKey())
-                    );
-                }
+            case "get_public_key" -> {
+                var result = doGetPublicKey(request);
+                response = new ResponseDto(request);
+                response.setResult(Result.toJson(result));
+                var restClient = new ResponseRestClient();
+                response = restClient.create(response);
+
+                event = NIP46.createResponseEvent(
+                        toResponse(response),
+                        sender,
+                        new PublicKey(request.getInitiator())
+                );
             }
-            case METHOD_SIGN_EVENT -> {
-                if (method instanceof SignEvent signEvent) {
-                    IEvent paramEvent = (IEvent) signEvent.getParameter("pubkey").get();
-                    Nostr.sign((ISignable) paramEvent);
-                    signEvent.setResult(paramEvent);
-                    response = new Response(request.getId(), METHOD_SIGN_EVENT, signEvent.getResult());
-                    event = NIP46.createResponseEvent(
-                            new NIP46.NIP46Response(
-                                    response.getId(),
-                                    METHOD_SIGN_EVENT,
-                                    response.getResult().toString(),
-                                    null,
-                                    request.getJwt()
-                            ),
-                            sender,
-                            new PublicKey(request.getInitiator().getPublicKey())
-                    );
-                }
+            case "sign_event" -> {
+                var result = doSignEvent(request);
+                response = new ResponseDto(request);
+                response.setResult(Result.toJson(result));
+                var restClient = new ResponseRestClient();
+                response = restClient.create(response);
+
+                event = NIP46.createResponseEvent(
+                        toResponse(response),
+                        sender,
+                        new PublicKey(request.getInitiator())
+                );
             }
             default -> throw new RuntimeException("Invalid request: " + request);
         }
@@ -195,21 +182,74 @@ public class SignerService {
             throw new RuntimeException("Invalid request: " + request);
         }
 
-        sessionManager.addResponse(response, new PublicKey(appProxy.getPublicKey()));
-        sessionManager.addRequest(request, new PublicKey(appProxy.getPublicKey()));
+        sessionManager.addResponse(response, app);
+        sessionManager.addRequest(request, app);
 
         log.log(Level.FINE, "Submitting event {0} to relay(s)", event);
         Nostr.sign(sender, event);
         Nostr.send(event);
+
+        return response;
     }
 
-    private void validateSession(@NonNull Request request) {
-        var app = new PublicKey(request.getInitiator().getPublicKey());
+    private Result doSignEvent(@NonNull RequestDto requestDto) {
+        var client = new ParameterRestClient();
+        var params = client.getParametersByRequest(requestDto);
+        var param = params.stream()
+                .filter(Objects::nonNull)
+                .filter(p -> p.getName().equals("event"))
+                .findFirst();
+
+        if (param.isPresent()) {
+            var strEvent = param.get().getValue();
+            IEvent event = getEvent(strEvent);
+            NIP01.sign((ISignable) event);
+
+            var result = new Result();
+            result.setValue(Base64.getEncoder().encodeToString(strEvent.getBytes()));
+            result.setApp(requestDto.getInitiator());
+            result.setSessionId(requestDto.getSession().getSessionId());
+            return result;
+        }
+
+        return new Result();
+    }
+
+    private IEvent getEvent(String strEvent) {
+        var decoder = new GenericEventDecoder(strEvent);
+        return decoder.decode();
+    }
+
+    private Result doGetPublicKey(@NonNull RequestDto requestDto) {
+        var client = new ParameterRestClient();
+        var params = client.getParametersByRequest(requestDto);
+        var param = params.stream()
+                .filter(Objects::nonNull)
+                .filter(p -> p.getName().equals("event"))
+                .findFirst();
+
+        if (param.isPresent()) {
+            var strEvent = param.get().getValue();
+            IEvent event = getEvent(strEvent);
+            NIP01.sign((ISignable) event);
+
+            var result = new Result();
+            result.setValue(Base64.getEncoder().encodeToString(strEvent.getBytes()));
+            result.setApp(requestDto.getInitiator());
+            result.setSessionId(requestDto.getSession().getSessionId());
+            return result;
+        }
+
+        return new Result();
+    }
+
+    private void validateSession(@NonNull RequestDto request) {
+        var app = request.getInitiator();
         var session = sessionManager.getSession(app);
         var hasActiveSession = this.sessionManager.sessionIsActive(app);
-        var token = request.getJwt();
+        var token = request.getToken();
 
-        if (!session.getJwtToken().equals(token)) {
+        if (!session.getToken().equals(token)) {
             throw new RuntimeException(String.format("Failed validation: Invalid session id %s for %s.", token, app));
         }
 
@@ -218,87 +258,159 @@ public class SignerService {
         }
     }
 
-    // TODO - Add the additional methods as they get implemented.
-    // TODO - For later: dynamically retrieve the names from the list of concrete classes implementing the IMethod interface
-    private void doDescribe(@NonNull IMethod method) {
+    private Result doDescribe(String app) {
+        List<String> methodList = new ArrayList<>();
+        methodList.add(DESCRIBE.getName());
+        methodList.add(MethodDto.MethodType.CONNECT.getName());
+        methodList.add(DISCONNECT.getName());
 
-        List<String> result = new ArrayList<>();
-        result.add(METHOD_DESCRIBE);
-        result.add(METHOD_CONNECT);
-        result.add(METHOD_DISCONNECT);
+        log.log(Level.INFO, "describe: {0}", methodList);
 
-        log.log(Level.INFO, "describe: {0}", result);
-        ((Describe) method).setResult(result);
+        var result = new Result(app);
+        result.setValue(String.join(", ", methodList));
+
+        return result;
     }
 
-    private void doConnect(@NonNull IMethod method, @NonNull PublicKey app) {
+    private Result doConnect(@NonNull RequestDto requestDto) {
+        var app = new PublicKey(requestDto.getInitiator());
+
         if (isConnected(app)) {
-            throw new RuntimeException(String.format("Failed to connect: %s is already connected!", app));
+            throw new RuntimeException(String.format("Cannot connect: %s is already connected!", app));
         }
 
-        this.sessionManager.activateSession(app);
+        this.sessionManager.activateSession(app.toString());
         log.log(Level.INFO, "ACK: {0} connected!", app);
-        ((Connect) method).setResult("ACK");
 
+        var result = new Result(app.toString());
+        result.setValue(ResponseDto.RESULT_ACK);
+/*
+        result.setApp(app.toString());
+        result.setSessionId(getSession(app).getSessionId());
+*/
+        return result;
     }
 
-    private void doDisconnect(@NonNull IMethod method, @NonNull PublicKey app) {
+    private Result doDisconnect(@NonNull RequestDto requestDto) {
+        var client = new ParameterRestClient();
+        var params = client.getParametersByRequest(requestDto);
+        var app = new PublicKey(requestDto.getInitiator());
         if (!isConnected(app)) {
             throw new RuntimeException(String.format("Failed to disconnect: %s is not connected!", app));
         }
-        this.sessionManager.deactivateSession(app);
+        this.sessionManager.deactivateSession(app.toString());
         log.log(Level.INFO, "ACK: {0} disconnected!", app);
-        ((Disconnect) method).setResult("ACK");
+
+        Result result = new Result(app.toString());
+        result.setValue(ResponseDto.RESULT_ACK);
+
+        return result;
+    }
+
+    private NIP46.Request toRequest(RequestDto requestDto) {
+        var request = new NIP46.Request();
+
+        request.setRequestUuid(requestDto.getRequestUuid());
+        request.setToken(requestDto.getToken());
+        request.setInitiator(requestDto.getInitiator());
+        request.setSession(toSession(requestDto.getSession()));
+        request.setCreatedAt(requestDto.getCreatedAt());
+        request.setToken(requestDto.getToken());
+        request.setMethod(toMethod(requestDto.getMethod()));
+
+        return request;
+    }
+
+    private NIP46.Response toResponse(ResponseDto responseDto) {
+        var response = new NIP46.Response();
+        response.setResponseUuid(responseDto.getResponseUuid());
+        response.setResult(responseDto.getResult());
+        response.setSession(toSession(responseDto.getSession()));
+        return response;
+    }
+
+    private NIP46.Session toSession(SessionDto sessionDto) {
+        var session = new NIP46.Session();
+        session.setSessionId(sessionDto.getSessionId());
+        session.setCreatedAt(sessionDto.getCreatedAt());
+        session.setToken(sessionDto.getToken());
+        session.setApp(sessionDto.getApp());
+        session.setStatus(sessionDto.getStatus());
+        return session;
+    }
+
+    private NIP46.Method toMethod(MethodDto methodDto) {
+        var method = new NIP46.Method();
+        method.setName(methodDto.getName());
+        method.setDescription(methodDto.getDescription());
+        return method;
+    }
+
+    private NIP46.Parameter toParameter(ParameterDto parameterDto) {
+        var parameter = new NIP46.Parameter();
+        parameter.setName(parameterDto.getName());
+        parameter.setValue(parameterDto.getValue());
+        return parameter;
     }
 
     // TODO - Implement the method. Check is a connection already exists for the app.
     private boolean isConnected(@NonNull PublicKey app) {
         var session = getSession(app);
 
-        var request = getMostRecentConnectRequest(session);
-        if (!request.isPresent()) {
+        if (!session.getStatus().equals(Session.STATUS_ACTIVE)) {
             return false;
         }
 
-        var response = getResponseForRequest(request);
+        var reqRestClient = new RequestRestClient();
+        var requests = reqRestClient.getBySessionIdByMethodId(session.getId(), MethodDto.MethodType.CONNECT.getId());
 
-        return response != null && response.getResult().equals("ACK");
-    }
+        var req = requests.stream().findFirst();
 
-    private Optional<Request> getMostRecentConnectRequest(@NonNull Session session) {
-        var requests = session.getRequests();
-
-        return requests.stream()
-                .filter(request -> request.getMethod() instanceof Connect)
-                .max(Comparator.comparing(Request::getTimestamp));
-    }
-
-    private Response getResponseForRequest(Optional<Request> requestOptional) {
-        if (!requestOptional.isPresent()) {
-            return null; // or throw an exception
+        if (req.isEmpty()) {
+            return false;
         }
 
-        var request = requestOptional.get();
-        var session = sessionManager.getSession(new PublicKey(request.getInitiator().getPublicKey()));
-        var responses = session.getResponses();
-        var responseOptional = responses.stream()
-                .filter(response -> response.getId().equals(request.getId()))
-                .findFirst();
+        var respRestClient = new ResponseRestClient();
+        var resp = respRestClient.getByResponseUuid(req.get().getRequestUuid());
 
-        if (responseOptional.isPresent()) {
-            Response response = responseOptional.get();
-            if (request.getTimestamp().after(response.getTimestamp())) {
-                throw new RuntimeException("Request was emitted after the response");
-            }
-            return response;
+        var om = new ObjectMapper();
+        Result result;
+        try {
+            result = om.readValue(resp.getResult(), Result.class);
+        } catch (JsonProcessingException e) {
+            log.log(Level.WARNING, "Failed to parse response: {0}", e.getMessage());
+            return false;
         }
-
-        return null;
+        return resp != null && result.getValue().equals(ResponseDto.RESULT_ACK);
     }
 
-    private Session getSession(PublicKey appPublicKey) {
+    private SessionDto getSession(PublicKey appPublicKey) {
         var sessionManager = SessionManager.getInstance();
-        return sessionManager.getSession(appPublicKey);
+        return sessionManager.getSession(appPublicKey.toString());
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Result {
+        private String value;
+        private String message;
+        private String sessionId;
+        private String app;
+
+        public Result(@NonNull String app) {
+            this.app = app;
+            SessionManager sessionManager = SessionManager.getInstance();
+            this.sessionId = sessionManager.getSession(app).getSessionId();
+        }
+
+        public String toJson() {
+            return String.format("{\"value\": \"%s\", \"message\": \"%s\", \"sessionId\": \"%s\", \"app\": \"%s\"}", value, message, sessionId, app);
+        }
+
+        public static String toJson(Result result) {
+            return result.toJson();
+        }
     }
 
 }

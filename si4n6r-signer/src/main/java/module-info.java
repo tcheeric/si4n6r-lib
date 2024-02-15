@@ -15,14 +15,16 @@ module si4n6r.signer {
     requires nostr.util;
     requires nostr.ws.handler;
 
-    requires si4n6r.core;
+    requires si4n6r.rest;
     requires si4n6r.util;
+    requires si4n6r.jpa;
+
+    requires spring.web;
     
     requires com.fasterxml.jackson.databind;
     requires com.auth0.jwt;
 
     exports nostr.si4n6r.signer;
-    exports nostr.si4n6r.signer.methods;
 
     provides ICommandHandler with SignerCommandHandler;
 
