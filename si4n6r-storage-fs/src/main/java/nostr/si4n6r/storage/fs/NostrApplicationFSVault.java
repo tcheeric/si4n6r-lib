@@ -3,8 +3,7 @@ package nostr.si4n6r.storage.fs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.java.Log;
-import nostr.si4n6r.core.impl.ApplicationProxy;
-import nostr.si4n6r.core.impl.BaseActorProxy;
+import nostr.si4n6r.storage.common.ApplicationProxy;
 import nostr.si4n6r.util.Util;
 
 import java.io.File;
@@ -13,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
+import static nostr.si4n6r.storage.common.BaseActorProxy.VAULT_ACTOR_APPLICATION;
 
 
 @Log
@@ -75,11 +74,8 @@ public class NostrApplicationFSVault extends BaseFSVault<ApplicationProxy> {
     }
 
     @Override
-    protected String getActorBaseDirectory(@NonNull BaseActorProxy proxy) {
-        if (proxy instanceof ApplicationProxy applicationProxy) {
-            return this.getBaseDirectory() + File.separator + getEntityName() + File.separator + applicationProxy.getName();
-        }
-        throw new IllegalArgumentException("Invalid proxy type");
+    protected String getActorBaseDirectory(@NonNull ApplicationProxy proxy) {
+        return this.getBaseDirectory() + File.separator + getEntityName() + File.separator + proxy.getName();
     }
 
 }
