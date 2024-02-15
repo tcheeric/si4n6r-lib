@@ -185,7 +185,7 @@ public class SignerCommandHandler implements ICommandHandler {
 
     private static RequestDto fromRequest(@NonNull Request request) {
         var requestDto = new RequestDto();
-        requestDto.setRequestUuid(request.getRequestUuid().toString());
+        requestDto.setRequestUuid(request.getRequestUuid());
         requestDto.setToken(request.getToken());
         requestDto.setInitiator(request.getInitiator());
         requestDto.setCreatedAt(request.getCreatedAt());
@@ -196,7 +196,7 @@ public class SignerCommandHandler implements ICommandHandler {
 
     private static SessionDto fromSession(@NonNull Session session) {
         var sessionDto = new SessionDto();
-        sessionDto.setSessionId(session.getSessionId().toString());
+        sessionDto.setSessionId(session.getSessionId());
         sessionDto.setApp(session.getApp());
         sessionDto.setAccount(session.getAccount());
         sessionDto.setCreatedAt(session.getCreatedAt());

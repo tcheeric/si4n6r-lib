@@ -151,10 +151,6 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
     private void linkApplication(@NonNull AccountProxy accountProxy, @NonNull Path path) throws IOException {
 
-        if(accountProxy.getApplication() == null) {
-            throw new IllegalArgumentException("Application is null");
-        }
-
         log.log(Level.INFO, "Store application...");
 
         storeApplication(accountProxy.getApplication());

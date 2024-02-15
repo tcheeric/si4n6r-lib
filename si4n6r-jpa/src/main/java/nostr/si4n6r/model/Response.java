@@ -1,20 +1,13 @@
 package nostr.si4n6r.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import nostr.api.NIP46;
-import nostr.si4n6r.model.util.JsonbStringConverter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -29,7 +22,7 @@ public class Response {
     public Response(@NonNull Request request) {
         this();
         this.method = request.getMethod();
-        this.responseUuid = request.getRequestUuid().toString();
+        this.responseUuid = request.getRequestUuid();
         this.session = request.getSession();
     }
 

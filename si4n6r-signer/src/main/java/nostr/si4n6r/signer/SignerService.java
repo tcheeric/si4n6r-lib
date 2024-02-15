@@ -381,7 +381,7 @@ public class SignerService {
             log.log(Level.WARNING, "Failed to parse response: {0}", e.getMessage());
             return false;
         }
-        return resp != null && result.getValue().equals(ResponseDto.RESULT_ACK);
+        return result.getValue().equals(ResponseDto.RESULT_ACK);
     }
 
     private SessionDto getSession(PublicKey appPublicKey) {
