@@ -2,7 +2,6 @@ module si4n6r.jpa {
     requires lombok;
 
     requires nostr.api;
-    requires si4n6r.core;
 
     requires com.fasterxml.jackson.annotation;
 

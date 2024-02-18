@@ -15,17 +15,6 @@ import java.time.LocalDateTime;
 @Table(name = "t_response")
 public class Response {
 
-    public Response() {
-        this.createdAt = LocalDateTime.now();
-    }
-
-    public Response(@NonNull Request request) {
-        this();
-        this.method = request.getMethod();
-        this.responseUuid = request.getRequestUuid();
-        this.session = request.getSession();
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -44,12 +33,12 @@ public class Response {
     private LocalDateTime createdAt;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "method_id", nullable = false)
     private Method method;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;
 

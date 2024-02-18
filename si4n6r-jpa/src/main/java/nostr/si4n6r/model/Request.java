@@ -11,18 +11,12 @@ import nostr.api.NIP46;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.UUID;
 
 @Getter
 @Setter
 @Entity(name = "Request")
 @Table(name = "t_request")
 public class Request {
-
-    public Request() {
-        this.createdAt = LocalDateTime.now();
-        this.requestUuid = UUID.randomUUID().toString();
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,12 +40,12 @@ public class Request {
     private String requestUuid;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "method_id", nullable = false)
     private Method method;
 

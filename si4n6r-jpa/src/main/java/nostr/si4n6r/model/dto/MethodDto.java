@@ -6,11 +6,13 @@ import lombok.*;
 /**
  * DTO for {@link nostr.si4n6r.model.Method}
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class MethodDto extends BaseDto {
 
+    @Getter
     public enum MethodType {
         DESCRIBE("describe", 11L),
         CONNECT("connect", 1L),
@@ -26,13 +28,6 @@ public class MethodDto extends BaseDto {
             this.id = id;
         }
 
-        public String getName() {
-            return name;
-        }
-
-        public Long getId() {
-            return id;
-        }
     }
 
     @NotNull

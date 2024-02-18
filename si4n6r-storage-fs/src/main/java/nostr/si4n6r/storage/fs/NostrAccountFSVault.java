@@ -70,7 +70,7 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
         if (Files.exists(privateKeyPath)) {
             try {
-                var nsec = EncryptionUtil.decryptNsec(new PublicKey(account.getPublicKey()), password);
+                var nsec = EncryptionUtil.decryptNsec(account.getId(), new PublicKey(account.getPublicKey()), password);
                 return nsec.toString();
             } catch (Exception ex) {
                 log.log(Level.SEVERE, String.format("Failed to decrypt the nsec for %s", account.getPublicKey()), ex);
@@ -88,7 +88,12 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
     @Override
     protected String getActorBaseDirectory(@NonNull AccountProxy proxy) {
-        return this.getBaseDirectory() + File.separator + getEntityName() + File.separator + EncryptionUtil.generateCRC32Hash(proxy.getId().trim().toLowerCase());
+        return this.getBaseDirectory() +
+                File.separator +
+                getEntityName() +
+                File.separator +
+                //EncryptionUtil.generateCRC32Hash(proxy.getId().trim().toLowerCase());
+                proxy.getId().trim().toLowerCase();
     }
 
 

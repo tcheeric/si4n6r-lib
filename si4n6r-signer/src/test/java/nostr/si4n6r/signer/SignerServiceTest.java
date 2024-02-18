@@ -29,16 +29,16 @@ public class SignerServiceTest {
     private SignerService signerService;
     private PublicKey app;
     private PublicKey user;
-    private SessionRestClient restClient;
-    private RestTemplate restTemplate;
+    //private SessionRestClient restClient;
+    //private RestTemplate restTemplate;
 
     @BeforeAll
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         this.signerService = SignerService.getInstance();
-        this.restClient = new SessionRestClient();
-        this.restTemplate = new RestTemplate();
-        this.restClient.setRestTemplate(restTemplate);
+        //this.restClient = new SessionRestClient();
+        //this.restTemplate = new RestTemplate();
+        //this.restClient.setRestTemplate(restTemplate);
 
     }
 
@@ -73,9 +73,9 @@ public class SignerServiceTest {
 
         // Session
         final var session = SignerServiceTest.createSession(user, app);
-        var sessionDto = restClient.create(session);
+        //var sessionDto = restClient.create(session);
 
-        if(sessionDto == null) {
+        if(session == null) {
             throw new RuntimeException("Session not found");
         }
 
@@ -91,9 +91,9 @@ public class SignerServiceTest {
         var request = new RequestDto();
         ResponseEntity<RequestDto> responseRequest = ResponseEntity.ok(request);
         request.setMethod(connectDto);
-        request.setRequestUuid(UUID.randomUUID().toString());
-        request.setSession(sessionDto);
-        request.setToken(sessionDto.getToken());
+        //request.setRequestUuid(UUID.randomUUID().toString());
+        request.setSession(session);
+        request.setToken(session.getToken());
         request.setInitiator(app.toString());
         var rqclient = new RequestRestClient();
         log.log(Level.INFO, ">>>> Creating Request: {0}", request);

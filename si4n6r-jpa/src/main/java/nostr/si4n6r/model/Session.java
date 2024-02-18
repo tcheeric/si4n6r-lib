@@ -1,7 +1,13 @@
 package nostr.si4n6r.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +17,6 @@ import nostr.api.NIP46;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -22,12 +27,6 @@ public class Session {
     public static final String STATUS_NEW = "NEW";
     public static final String STATUS_ACTIVE = "ACTIVE";
     public static final String STATUS_INACTIVE = "INACTIVE";
-
-    public Session() {
-        this.createdAt = LocalDateTime.now();
-        this.sessionId = UUID.randomUUID().toString();
-        this.status = STATUS_NEW;
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

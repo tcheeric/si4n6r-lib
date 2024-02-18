@@ -3,12 +3,14 @@ package nostr.si4n6r.model.dto;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import nostr.si4n6r.model.dto.RequestDto;
 
 /**
  * DTO for {@link nostr.si4n6r.model.Parameter}
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

@@ -101,6 +101,11 @@ public class SignerService {
 
         log.log(Level.INFO, "Handling {0}", request);
 
+        if (request.getId() == null) {
+            var requestRestClient = new RequestRestClient();
+            request = requestRestClient.create(request);
+        }
+
         validateSession(request);
 
         GenericEvent event;
@@ -114,8 +119,6 @@ public class SignerService {
                 response.setResult(Result.toJson(result));
                 var restClient = new ResponseRestClient();
                 response = restClient.create(response);
-
-                sessionManager.addResponse(response, app);
 
                 event = NIP46.createResponseEvent(
                         toResponse(response),
@@ -284,16 +287,10 @@ public class SignerService {
 
         var result = new Result(app.toString());
         result.setValue(ResponseDto.RESULT_ACK);
-/*
-        result.setApp(app.toString());
-        result.setSessionId(getSession(app).getSessionId());
-*/
         return result;
     }
 
     private Result doDisconnect(@NonNull RequestDto requestDto) {
-        var client = new ParameterRestClient();
-        var params = client.getParametersByRequest(requestDto);
         var app = new PublicKey(requestDto.getInitiator());
         if (!isConnected(app)) {
             throw new RuntimeException(String.format("Failed to disconnect: %s is not connected!", app));
@@ -410,6 +407,15 @@ public class SignerService {
 
         public static String toJson(Result result) {
             return result.toJson();
+        }
+
+        public static Result fromJson(String json) {
+            var om = new ObjectMapper();
+            try {
+                return om.readValue(json, Result.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

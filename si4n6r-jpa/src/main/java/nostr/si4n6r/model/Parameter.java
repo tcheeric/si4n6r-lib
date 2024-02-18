@@ -34,7 +34,7 @@ public class Parameter {
     private String value;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "request_id", nullable = false)
     private Request request;
 
