@@ -51,8 +51,20 @@ public class EncryptionUtil {
         return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
 
-    public static nostr.base.PrivateKey decryptNsec(@NonNull nostr.base.PublicKey npub, @NonNull String password) throws Exception {
-        var nsecBinPath = Util.getAccountBaseDirectory() + File.separator + "account" + File.separator + EncryptionUtil.generateCRC32Hash(npub.toString()) + File.separator + "nsec.bin";
+    public static nostr.base.PrivateKey decryptNsec(
+            @NonNull String name,
+            @NonNull nostr.base.PublicKey npub,
+            @NonNull String password) throws Exception
+    {
+        log.log(Level.FINE, "Decrypting nsec for {0}", name.trim().toLowerCase());
+        var nsecBinPath = Util.getAccountBaseDirectory() +
+                File.separator +
+                "account" +
+                File.separator +
+                //EncryptionUtil.generateCRC32Hash(name.trim().toLowerCase()) +
+                name.trim().toLowerCase() +
+                File.separator +
+                "nsec.bin";
 
         var privateKeyFile = EncryptionUtil.getPrivateKeyFile(npub);
         var privateKey = EncryptionUtil.loadPrivateKeyFromPEM(privateKeyFile, password);

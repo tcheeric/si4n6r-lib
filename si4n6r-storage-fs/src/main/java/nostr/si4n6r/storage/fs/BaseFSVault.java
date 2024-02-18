@@ -3,7 +3,7 @@ package nostr.si4n6r.storage.fs;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
-import nostr.si4n6r.core.impl.BaseActorProxy;
+import nostr.si4n6r.storage.common.BaseActorProxy;
 import nostr.si4n6r.storage.Vault;
 import nostr.si4n6r.util.EncryptionUtil;
 
@@ -30,7 +30,7 @@ public abstract class BaseFSVault<T extends BaseActorProxy> implements Vault<T> 
         return getBaseDirectory() + "/" + entityName;
     }
 
-    protected String getActorBaseDirectory(@NonNull BaseActorProxy proxy) {
+    protected String getActorBaseDirectory(T proxy) {
         return this.getBaseDirectory() + File.separator + getEntityName() + File.separator + EncryptionUtil.generateCRC32Hash(proxy.getPublicKey());
     }
 

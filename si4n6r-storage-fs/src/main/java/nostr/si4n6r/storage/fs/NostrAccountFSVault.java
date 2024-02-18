@@ -6,8 +6,8 @@ import lombok.NonNull;
 import lombok.extern.java.Log;
 import nostr.base.PrivateKey;
 import nostr.base.PublicKey;
-import nostr.si4n6r.core.impl.AccountProxy;
-import nostr.si4n6r.core.impl.ApplicationProxy;
+import nostr.si4n6r.storage.common.AccountProxy;
+import nostr.si4n6r.storage.common.ApplicationProxy;
 import nostr.si4n6r.util.EncryptionUtil;
 import nostr.si4n6r.util.Util;
 
@@ -19,8 +19,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.logging.Level;
 
-import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
-import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
+import static nostr.si4n6r.storage.common.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
+import static nostr.si4n6r.storage.common.BaseActorProxy.VAULT_ACTOR_APPLICATION;
 import static nostr.si4n6r.util.EncryptionUtil.getPrivateKeyFile;
 
 @EqualsAndHashCode(callSuper = true)
@@ -33,7 +33,6 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
     public NostrAccountFSVault() {
         super(Util.getAccountBaseDirectory(), VAULT_ACTOR_ACCOUNT);
-        //this.password = PasswordGenerator.generate(16);
     }
 
     @Override
@@ -71,7 +70,7 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
 
         if (Files.exists(privateKeyPath)) {
             try {
-                var nsec = EncryptionUtil.decryptNsec(new PublicKey(account.getPublicKey()), password);
+                var nsec = EncryptionUtil.decryptNsec(account.getId(), new PublicKey(account.getPublicKey()), password);
                 return nsec.toString();
             } catch (Exception ex) {
                 log.log(Level.SEVERE, String.format("Failed to decrypt the nsec for %s", account.getPublicKey()), ex);
@@ -86,6 +85,17 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
     protected String getBaseDirectory(@NonNull AccountProxy account) {
         return getActorBaseDirectory(account);
     }
+
+    @Override
+    protected String getActorBaseDirectory(@NonNull AccountProxy proxy) {
+        return this.getBaseDirectory() +
+                File.separator +
+                getEntityName() +
+                File.separator +
+                //EncryptionUtil.generateCRC32Hash(proxy.getId().trim().toLowerCase());
+                proxy.getId().trim().toLowerCase();
+    }
+
 
     private static void createNSecSymbolicLink(AccountProxy account, Path target) throws IOException {
         final var nsecPath = _getAccountApplicationBaseDir(account);
@@ -145,10 +155,6 @@ public class NostrAccountFSVault extends BaseFSVault<AccountProxy> {
     }
 
     private void linkApplication(@NonNull AccountProxy accountProxy, @NonNull Path path) throws IOException {
-
-        if(accountProxy.getApplication() == null) {
-            throw new IllegalArgumentException("Application is null");
-        }
 
         log.log(Level.INFO, "Store application...");
 

@@ -9,12 +9,13 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-        <module>si4n6r-core</module>
         <module>si4n6r-signer</module>
         <module>si4n6r-test</module>
         <module>si4n6r-util</module>
         <module>si4n6r-storage</module>
         <module>si4n6r-storage-fs</module>
+        <module>si4n6r-jpa</module>
+        <module>si4n6r-rest</module>
     </modules>
 
     <build>
@@ -90,6 +91,44 @@
 
         <!-- Test Dependency Versions -->
         <junit.version>5.9.1</junit.version>
+        <assertj.version>3.23.1</assertj.version>
+
+        <lombok.version>1.18.24</lombok.version>
+
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
+        <flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
+        <maven-war-plugin.version>3.3.2</maven-war-plugin.version>
+
+        <spring.boot.starter.test.version>3.2.0</spring.boot.starter.test.version>
+        <spring.boot.maven.plugin.version>3.2.0</spring.boot.maven.plugin.version>
+        <spring.boot.starter.data.jpa.version>3.2.0</spring.boot.starter.data.jpa.version>
+        <spring.boot.starter.jdbc.version>3.2.0</spring.boot.starter.jdbc.version>
+        <spring.boot.starter.validation.version>3.2.0</spring.boot.starter.validation.version>
+        <spring.boot.starter.data.rest.version>3.2.0</spring.boot.starter.data.rest.version>
+        <spring.boot.starter.web.version>3.2.0</spring.boot.starter.web.version>
+        <spring.boot.starter.test.version>3.2.0</spring.boot.starter.test.version>
+
+        <hibernate.version>6.2.4.Final</hibernate.version>
+        <jaxb.version>4.0.2</jaxb.version>
+        <mapstruct.version>1.4.2.Final</mapstruct.version>
+
+        <postgresql.version>42.3.1</postgresql.version>
+
+        <logback.version>1.4.11</logback.version>
+        <lombok.version>1.18.24</lombok.version>
+        <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
+        <jackson.databind.version>2.15.1</jackson.databind.version>
+        <junit.version>5.9.2</junit.version>
+        <maven-war-plugin.version>3.3.2</maven-war-plugin.version>
+
+        <tomcat7-maven-plugin.version>2.2</tomcat7-maven-plugin.version>
+
+        <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
+
+        <!-- Test Dependency Versions -->
+        <junit.version>5.9.2</junit.version>
         <assertj.version>3.23.1</assertj.version>
 
         <maven.compiler.source>20</maven.compiler.source>

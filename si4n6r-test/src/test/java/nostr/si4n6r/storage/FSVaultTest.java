@@ -1,16 +1,16 @@
 package nostr.si4n6r.storage;
 
 import nostr.id.Identity;
-import nostr.si4n6r.core.impl.AccountProxy;
-import nostr.si4n6r.core.impl.ApplicationProxy;
+import nostr.si4n6r.storage.common.AccountProxy;
+import nostr.si4n6r.storage.common.ApplicationProxy;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
 import java.util.ServiceLoader;
 import lombok.NonNull;
 
-import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
-import static nostr.si4n6r.core.impl.BaseActorProxy.VAULT_ACTOR_APPLICATION;
+import static nostr.si4n6r.storage.common.BaseActorProxy.VAULT_ACTOR_ACCOUNT;
+import static nostr.si4n6r.storage.common.BaseActorProxy.VAULT_ACTOR_APPLICATION;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class FSVaultTest {
@@ -73,7 +73,7 @@ public class FSVaultTest {
     private void createApplication() {
         var identity = Identity.generateRandomIdentity();
         this.application = new ApplicationProxy(identity.getPublicKey());
-        this.application.setId(System.currentTimeMillis());
+        this.application.setId(String.valueOf(System.currentTimeMillis()));
         var now = System.currentTimeMillis();
         this.application.setName("shibboleth_" + now);
         var template = this.application.getTemplate();
@@ -88,7 +88,7 @@ public class FSVaultTest {
         this.account = new AccountProxy();
         account.setPublicKey(identity.getPublicKey().toString());
         account.setPrivateKey(identity.getPrivateKey().toString());
-        account.setId(System.currentTimeMillis());
+        account.setId(String.valueOf(System.currentTimeMillis()));
         account.setApplication(this.application);
     }
 

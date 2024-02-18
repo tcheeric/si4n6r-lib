@@ -7,23 +7,29 @@ import nostr.api.NIP46;
 import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
-import nostr.si4n6r.core.IMethod;
-import nostr.si4n6r.core.impl.ApplicationProxy;
-import nostr.si4n6r.core.impl.Request;
-import nostr.si4n6r.core.impl.SessionManager;
+import nostr.si4n6r.model.Method;
+import nostr.si4n6r.model.Parameter;
+import nostr.si4n6r.model.Request;
+import nostr.si4n6r.model.Session;
+import nostr.si4n6r.model.dto.MethodDto;
+import nostr.si4n6r.model.dto.ParameterDto;
+import nostr.si4n6r.model.dto.RequestDto;
+import nostr.si4n6r.model.dto.ResponseDto;
+import nostr.si4n6r.model.dto.SessionDto;
+import nostr.si4n6r.rest.client.RequestRestClient;
+import nostr.si4n6r.rest.client.SessionManager;
 import nostr.si4n6r.signer.Signer;
 import nostr.si4n6r.signer.SignerService;
-import nostr.si4n6r.signer.methods.*;
 import nostr.si4n6r.util.Util;
 import nostr.util.NostrException;
 import nostr.ws.handler.command.spi.ICommandHandler;
 
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.logging.Level;
 
 import static nostr.api.Nostr.Json.decodeEvent;
-import static nostr.si4n6r.core.IMethod.Constants.METHOD_CONNECT;
 
 @Log
 public class SignerCommandHandler implements ICommandHandler {
@@ -76,45 +82,54 @@ public class SignerCommandHandler implements ICommandHandler {
         log.log(Level.FINER, "onAuth({0}, {1})", new Object[]{challenge, relay});
     }
 
-    private static Request toRequest(NIP46.NIP46Request nip46Request, @NonNull PublicKey application) {
-        return new Request<>(
-                nip46Request.getId(),
-                new ApplicationProxy(application),
-                toMethod(
-                        nip46Request.getMethod(),
-                        nip46Request.getParams()
-                ),
-                nip46Request.getSessionId(),
-                new Date()
-        );
+    private static SessionDto toSessionDto(@NonNull NIP46.Session session) {
+        var sessionDto = new SessionDto();
+        sessionDto.setSessionId(session.getSessionId());
+        sessionDto.setCreatedAt(session.getCreatedAt());
+        sessionDto.setToken(session.getToken());
+        sessionDto.setApp(session.getApp());
+        sessionDto.setStatus(sessionDto.getStatus());
+
+        return sessionDto;
     }
 
-    private static IMethod toMethod(@NonNull String name, @NonNull List<String> params) {
-        switch (name) {
-            case METHOD_CONNECT -> {
-                assert (params.size() == 1);
-                var publicKey = getPublicKey(params.get(0));
-                return new Connect(publicKey);
-            }
-            case IMethod.Constants.METHOD_DISCONNECT -> {
-                assert (params.isEmpty());
-                return new Disconnect();
-            }
-            case IMethod.Constants.METHOD_DESCRIBE -> {
-                assert (params.isEmpty());
-                return new Describe();
-            }
-            case IMethod.Constants.METHOD_GET_PUBLIC_KEY -> {
-                assert (params.isEmpty());
-                return new GetPublicKey();
-            }
-            case IMethod.Constants.METHOD_SIGN_EVENT -> {
-                assert (params.size() == 1);
-                var event = decodeEvent(params.get(0));
-                return new SignEvent(event);
-            }
-            default -> throw new RuntimeException("Invalid method name " + name);
-        }
+    private static ResponseDto toResponseDto(@NonNull NIP46.Response response) {
+        var responseDto = new ResponseDto();
+        responseDto.setResponseUuid(response.getResponseUuid());
+        responseDto.setResult(response.getResult());
+        responseDto.setCreatedAt(LocalDateTime.now());
+        responseDto.setCreatedAt(response.getCreatedAt());
+        responseDto.setSession(toSessionDto(response.getSession()));
+
+        return responseDto;
+    }
+
+    private static RequestDto toRequest(NIP46.Request nip46Request) {
+        var request = new RequestDto();
+        request.setRequestUuid(nip46Request.getRequestUuid());
+        request.setToken(nip46Request.getToken());
+        request.setInitiator(nip46Request.getInitiator());
+        request.setSession(toSessionDto(nip46Request.getSession()));
+        request.setCreatedAt(request.getCreatedAt());
+        request.setToken(request.getToken());
+        request.setMethod(toMethod(nip46Request.getMethod()));
+        return request;
+    }
+
+    private static MethodDto toMethod(@NonNull NIP46.Method method) {
+        MethodDto methodDto = new MethodDto();
+        methodDto.setDescription(method.getDescription());
+        methodDto.setName(method.getName());
+
+        return methodDto;
+    }
+
+    private static ParameterDto toParameterDto(NIP46.Parameter parameter) {
+        var parameterDto = new ParameterDto();
+        parameterDto.setName(parameter.getName());
+        parameterDto.setValue(parameter.getValue());
+
+        return parameterDto;
     }
 
     private static PublicKey getPublicKey(@NonNull String hex) {
@@ -133,17 +148,68 @@ public class SignerCommandHandler implements ICommandHandler {
         log.log(Level.INFO, "Content: {0}", content);
 
         if (content != null) {
-            var nip46Request = NIP46.NIP46Request.fromString(content);
-            Request request = toRequest(nip46Request, app);
+            var nip46Request = NIP46.Request.fromString(content);
+            var request = toRequest(nip46Request);
+            var params = getParameters(nip46Request);
             var sessionManager = SessionManager.getInstance();
 
             log.log(Level.INFO, "Request: {0}", request);
-            log.log(Level.INFO, "Method: {0}", request.getMethod().getName());
+            log.log(Level.INFO, "Method: {0}", request.getMethod());
 
-            sessionManager.addRequest(request, app);
+            var restClient = new RequestRestClient();
+            restClient.create(request);
+
+            sessionManager.addRequest(request, app.toString());
             var service = SignerService.getInstance();
-            service.handle(request);
+            var response = service.handle(request);
+
+            log.log(Level.INFO, "Response: {0}", response);
         }
+    }
+
+    private Set<ParameterDto> getParameters(NIP46.Request nip46Request) {
+        var request = Request.fromNIP46Request(nip46Request);
+        var parameters = request.getParameters();
+        var result = new LinkedHashSet<ParameterDto>();
+        parameters.stream().map(p -> fromParameter(p)).forEach(result::add);
+        return result;
+    }
+
+    private static ParameterDto fromParameter(@NonNull Parameter parameter) {
+        var parameterDto = new ParameterDto();
+        parameterDto.setName(parameter.getName());
+        parameterDto.setValue(parameter.getValue());
+        parameterDto.setRequest(fromRequest(parameter.getRequest()));
+        return parameterDto;
+    }
+
+    private static RequestDto fromRequest(@NonNull Request request) {
+        var requestDto = new RequestDto();
+        requestDto.setRequestUuid(request.getRequestUuid());
+        requestDto.setToken(request.getToken());
+        requestDto.setInitiator(request.getInitiator());
+        requestDto.setCreatedAt(request.getCreatedAt());
+        requestDto.setSession(fromSession(request.getSession()));
+        requestDto.setMethod(fromMethod(request.getMethod()));
+        return requestDto;
+    }
+
+    private static SessionDto fromSession(@NonNull Session session) {
+        var sessionDto = new SessionDto();
+        sessionDto.setSessionId(session.getSessionId());
+        sessionDto.setApp(session.getApp());
+        sessionDto.setAccount(session.getAccount());
+        sessionDto.setCreatedAt(session.getCreatedAt());
+        sessionDto.setToken(session.getToken());
+        sessionDto.setStatus(session.getStatus());
+        return sessionDto;
+    }
+
+    private static MethodDto fromMethod(@NonNull Method method) {
+        var methodDto = new MethodDto();
+        methodDto.setName(method.getName());
+        methodDto.setDescription(method.getDescription());
+        return methodDto;
     }
 
 }
