@@ -24,10 +24,6 @@ import java.util.Set;
 @Table(name = "t_session")
 public class Session {
 
-    public static final String STATUS_NEW = "NEW";
-    public static final String STATUS_ACTIVE = "ACTIVE";
-    public static final String STATUS_INACTIVE = "INACTIVE";
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)

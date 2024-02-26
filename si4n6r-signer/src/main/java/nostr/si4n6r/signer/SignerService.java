@@ -15,14 +15,15 @@ import nostr.base.ISignable;
 import nostr.base.PublicKey;
 import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
+import nostr.event.json.codec.BaseEventEncoder;
 import nostr.event.json.codec.GenericEventDecoder;
-import nostr.si4n6r.model.Session;
 import nostr.si4n6r.model.dto.*;
 import nostr.si4n6r.rest.client.ParameterRestClient;
 import nostr.si4n6r.rest.client.RequestRestClient;
 import nostr.si4n6r.rest.client.ResponseRestClient;
 import nostr.si4n6r.rest.client.SessionManager;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -195,68 +196,34 @@ public class SignerService {
         return response;
     }
 
-    private Result doSignEvent(@NonNull RequestDto requestDto) {
-        var client = new ParameterRestClient();
-        var params = client.getParametersByRequest(requestDto);
-        var param = params.stream()
-                .filter(Objects::nonNull)
-                .filter(p -> p.getName().equals("event"))
-                .findFirst();
-
-        if (param.isPresent()) {
-            var strEvent = param.get().getValue();
-            IEvent event = getEvent(strEvent);
-            NIP01.sign((ISignable) event);
-
-            var result = new Result();
-            result.setValue(Base64.getEncoder().encodeToString(strEvent.getBytes()));
-            result.setApp(requestDto.getInitiator());
-            result.setSessionId(requestDto.getSession().getSessionId());
-            return result;
-        }
-
-        return new Result();
-    }
-
     private IEvent getEvent(String strEvent) {
-        var decoder = new GenericEventDecoder(strEvent);
+        var decodedEvent = Base64.getDecoder().decode(strEvent.getBytes(StandardCharsets.UTF_8));
+        var decoder = new GenericEventDecoder(new String(decodedEvent, StandardCharsets.UTF_8));
         return decoder.decode();
-    }
-
-    private Result doGetPublicKey(@NonNull RequestDto requestDto) {
-        var client = new ParameterRestClient();
-        var params = client.getParametersByRequest(requestDto);
-        var param = params.stream()
-                .filter(Objects::nonNull)
-                .filter(p -> p.getName().equals("event"))
-                .findFirst();
-
-        if (param.isPresent()) {
-            var strEvent = param.get().getValue();
-            IEvent event = getEvent(strEvent);
-            NIP01.sign((ISignable) event);
-
-            var result = new Result();
-            result.setValue(Base64.getEncoder().encodeToString(strEvent.getBytes()));
-            result.setApp(requestDto.getInitiator());
-            result.setSessionId(requestDto.getSession().getSessionId());
-            return result;
-        }
-
-        return new Result();
     }
 
     private void validateSession(@NonNull RequestDto request) {
         var app = request.getInitiator();
-        var session = sessionManager.getSession(app);
-        var hasActiveSession = this.sessionManager.sessionIsActive(app);
+        var method = request.getMethod().getName();
+        log.log(Level.INFO, "Validating session for {0} using method {1}", new Object[]{app, method});
+
+        SessionDto session;
+        boolean hasSession;
+        if (MethodDto.MethodType.CONNECT.getName().equals(method)) {
+            session = sessionManager.getNewSession(app);
+            hasSession = this.sessionManager.sessionIsNew(app);
+        } else {
+            session = sessionManager.getActiveSession(app);
+            hasSession = this.sessionManager.sessionIsActive(app);
+        }
+
         var token = request.getToken();
 
         if (!session.getToken().equals(token)) {
             throw new RuntimeException(String.format("Failed validation: Invalid session id %s for %s.", token, app));
         }
 
-        if (hasActiveSession && token == null) {
+        if (hasSession && token == null) {
             throw new RuntimeException(String.format("Failed validation: Missing session id for %s.", app));
         }
     }
@@ -288,6 +255,52 @@ public class SignerService {
         var result = new Result(app.toString());
         result.setValue(ResponseDto.RESULT_ACK);
         return result;
+    }
+
+    private Result doSignEvent(@NonNull RequestDto requestDto) {
+        log.log(Level.INFO, "Signing event: {0}", requestDto);
+        var client = new ParameterRestClient();
+        var params = client.getParametersByRequest(requestDto);
+        var param = params.stream()
+                .filter(Objects::nonNull)
+                .filter(p -> p.getName().equals(ParameterDto.PARAM_EVENT))
+                .findFirst();
+
+        if (param.isPresent()) {
+            var strEvent = param.get().getValue();
+            IEvent event = getEvent(strEvent);
+            NIP01.sign((ISignable) event);
+            strEvent = new BaseEventEncoder((GenericEvent) event).encode();
+
+            log.log(Level.INFO, "Signed event: {0}", strEvent);
+
+            var result = new Result(requestDto.getInitiator());
+            result.setValue(Base64.getEncoder().encodeToString(strEvent.getBytes()));
+            return result;
+        }
+
+        return new Result();
+    }
+
+    private Result doGetPublicKey(@NonNull RequestDto requestDto) {
+        var client = new ParameterRestClient();
+        var params = client.getParametersByRequest(requestDto);
+        var param = params.stream()
+                .filter(Objects::nonNull)
+                .filter(p -> p.getName().equals(ParameterDto.PARAM_EVENT))
+                .findFirst();
+
+        if (param.isPresent()) {
+            var strEvent = param.get().getValue();
+            IEvent event = getEvent(strEvent);
+            NIP01.sign((ISignable) event);
+
+            var result = new Result(requestDto.getInitiator());
+            result.setValue(Base64.getEncoder().encodeToString(strEvent.getBytes()));
+            return result;
+        }
+
+        return new Result();
     }
 
     private Result doDisconnect(@NonNull RequestDto requestDto) {
@@ -352,9 +365,13 @@ public class SignerService {
 
     // TODO - Implement the method. Check is a connection already exists for the app.
     private boolean isConnected(@NonNull PublicKey app) {
-        var session = getSession(app);
+        SessionDto session = SessionManager.getInstance().getSession(app.toString());
 
-        if (!session.getStatus().equals(Session.STATUS_ACTIVE)) {
+        if (session == null) {
+            return false;
+        }
+
+        if (!session.getStatus().equals(SessionDto.STATUS_ACTIVE)) {
             return false;
         }
 
@@ -381,11 +398,6 @@ public class SignerService {
         return result.getValue().equals(ResponseDto.RESULT_ACK);
     }
 
-    private SessionDto getSession(PublicKey appPublicKey) {
-        var sessionManager = SessionManager.getInstance();
-        return sessionManager.getSession(appPublicKey.toString());
-    }
-
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -398,7 +410,11 @@ public class SignerService {
         public Result(@NonNull String app) {
             this.app = app;
             SessionManager sessionManager = SessionManager.getInstance();
-            this.sessionId = sessionManager.getSession(app).getSessionId();
+            var session = sessionManager.getSession(app);
+            if (session == null) {
+                throw new RuntimeException("No session found for app: " + app);
+            }
+            this.sessionId = session.getSessionId();
         }
 
         public String toJson() {

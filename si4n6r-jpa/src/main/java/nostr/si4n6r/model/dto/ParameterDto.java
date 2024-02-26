@@ -15,6 +15,11 @@ import nostr.si4n6r.model.dto.RequestDto;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ParameterDto extends BaseDto {
+
+    public static final String PARAM_EVENT = "event";
+    public static final String PARAM_SIGNATURE = "signature";
+    public static final String PARAM_PUBLIC_KEY = "public key";
+
     @NotNull
     private String name;
     @NotNull

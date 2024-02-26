@@ -12,14 +12,9 @@ import nostr.si4n6r.model.dto.SessionDto;
 import nostr.si4n6r.rest.client.MethodRestClient;
 import nostr.si4n6r.rest.client.RequestRestClient;
 import nostr.si4n6r.rest.client.SessionManager;
-import nostr.si4n6r.rest.client.SessionRestClient;
 import nostr.si4n6r.storage.common.ApplicationProxy;
 import org.junit.jupiter.api.*;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.UUID;
 import java.util.logging.Level;
 
 @Log
@@ -34,7 +29,7 @@ public class SignerServiceTest {
 
     @BeforeAll
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
+        //MockitoAnnotations.openMocks(this);
         this.signerService = SignerService.getInstance();
         //this.restClient = new SessionRestClient();
         //this.restTemplate = new RestTemplate();
@@ -71,27 +66,22 @@ public class SignerServiceTest {
         this.app = Identity.generateRandomIdentity().getPublicKey();
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        // Session
+        // Create the Session
         final var session = SignerServiceTest.createSession(user, app);
-        //var sessionDto = restClient.create(session);
-
         if(session == null) {
             throw new RuntimeException("Session not found");
         }
 
-        // Method
+        // Get the Method
         var mClient = new MethodRestClient();
         var connectDto = mClient.getMethodById(MethodDto.MethodType.CONNECT.getId());
-
         if(connectDto == null) {
             throw new RuntimeException("Connect method not found");
         }
 
-        // Request
+        // Create the Request
         var request = new RequestDto();
-        ResponseEntity<RequestDto> responseRequest = ResponseEntity.ok(request);
         request.setMethod(connectDto);
-        //request.setRequestUuid(UUID.randomUUID().toString());
         request.setSession(session);
         request.setToken(session.getToken());
         request.setInitiator(app.toString());
@@ -99,9 +89,10 @@ public class SignerServiceTest {
         log.log(Level.INFO, ">>>> Creating Request: {0}", request);
         var requestDto = rqclient.create(request);
 
-        // Handle connect
+        // Handle the connect method request
         var response = this.signerService.handle(requestDto);
 
+        // Check the result
         var om = new ObjectMapper();
         var result = om.readValue(response.getResult(), SignerService.Result.class);
         Assertions.assertEquals("ACK", result.getValue());

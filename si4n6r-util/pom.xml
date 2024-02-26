@@ -17,6 +17,11 @@
             <artifactId>nostr-java-api</artifactId>
             <version>${nostr-java.version}</version>
         </dependency>
+        <dependency>
+            <groupId>nostr-java</groupId>
+            <artifactId>nostr-java-id</artifactId>
+            <version>${nostr-java.version}</version>
+        </dependency>
     </dependencies>
 
     <properties>

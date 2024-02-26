@@ -117,7 +117,7 @@ public class SignerCommandHandler implements ICommandHandler {
     }
 
     private static MethodDto toMethod(@NonNull NIP46.Method method) {
-        MethodDto methodDto = new MethodDto();
+        var methodDto = new MethodDto();
         methodDto.setDescription(method.getDescription());
         methodDto.setName(method.getName());
 
