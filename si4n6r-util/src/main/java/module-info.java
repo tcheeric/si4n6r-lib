@@ -6,5 +6,7 @@ module si4n6r.util {
     requires nostr.base;
     requires nostr.event;
 
+    requires com.auth0.jwt;
+
     exports nostr.si4n6r.util;
 }

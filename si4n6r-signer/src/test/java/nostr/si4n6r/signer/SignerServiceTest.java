@@ -211,7 +211,7 @@ public class SignerServiceTest {
     }
 
     private static SessionDto createSession(@NonNull PublicKey user, @NonNull PublicKey app) {
-        return SessionManager.getInstance().createSession(user.toString(), app.toString(), 20 * 60, "password", "secret");
+        return SessionManager.getInstance().createSession(user.toString(), app.toString(), 20 * 60, "password");
     }
 
     private static SessionDto getSessionDto(SessionDto expectedEntity) {

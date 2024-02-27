@@ -22,6 +22,7 @@ import nostr.si4n6r.rest.client.ParameterRestClient;
 import nostr.si4n6r.rest.client.RequestRestClient;
 import nostr.si4n6r.rest.client.ResponseRestClient;
 import nostr.si4n6r.rest.client.SessionManager;
+import nostr.si4n6r.util.JWTUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -283,24 +284,10 @@ public class SignerService {
     }
 
     private Result doGetPublicKey(@NonNull RequestDto requestDto) {
-        var client = new ParameterRestClient();
-        var params = client.getParametersByRequest(requestDto);
-        var param = params.stream()
-                .filter(Objects::nonNull)
-                .filter(p -> p.getName().equals(ParameterDto.PARAM_EVENT))
-                .findFirst();
-
-        if (param.isPresent()) {
-            var strEvent = param.get().getValue();
-            IEvent event = getEvent(strEvent);
-            NIP01.sign((ISignable) event);
-
-            var result = new Result(requestDto.getInitiator());
-            result.setValue(Base64.getEncoder().encodeToString(strEvent.getBytes()));
-            return result;
-        }
-
-        return new Result();
+        var jwtUtil = new JWTUtil(requestDto.getToken());
+        var result = new Result(requestDto.getInitiator());
+        result.setValue(jwtUtil.getSubject());
+        return result;
     }
 
     private Result doDisconnect(@NonNull RequestDto requestDto) {
