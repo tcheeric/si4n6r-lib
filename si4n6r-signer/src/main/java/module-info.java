@@ -21,6 +21,8 @@ module si4n6r.signer {
     requires spring.web;
     
     requires com.fasterxml.jackson.databind;
+    requires si4n6r.storage;
+    requires si4n6r.storage.fs;
 
     exports nostr.si4n6r.signer;
 

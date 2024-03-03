@@ -37,7 +37,7 @@ public class Response {
     @JoinColumn(name = "method_id", nullable = false)
     private Method method;
 
-    @NotNull
+    //@NotNull
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;

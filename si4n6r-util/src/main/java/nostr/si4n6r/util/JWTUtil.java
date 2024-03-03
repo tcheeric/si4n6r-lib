@@ -14,9 +14,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Properties;
 
-import static com.auth0.jwt.algorithms.Algorithm.HMAC256;
-import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
-
 @AllArgsConstructor
 @Getter
 public class JWTUtil {
@@ -24,6 +21,7 @@ public class JWTUtil {
     private final String token;
 
     public static String createToken(
+            @NonNull String nip05,
             @NonNull String sessionId,
             @NonNull String account,
             @NonNull String app,
@@ -37,6 +35,7 @@ public class JWTUtil {
                 .withSubject(account)
                 .withJWTId(sessionId)
                 .withClaim("password", password)
+                .withClaim("nip05", nip05)
                 .sign(Algorithm.HMAC512(getSecret()));
     }
 
@@ -59,6 +58,10 @@ public class JWTUtil {
 
     public String getAudience() {
         return decodedJWT().getAudience().get(0);
+    }
+
+    public String getNip05() {
+        return getClaim("nip05");
     }
 
     public String getPassword() {

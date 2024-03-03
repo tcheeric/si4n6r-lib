@@ -18,7 +18,9 @@ public class ParameterDto extends BaseDto {
 
     public static final String PARAM_EVENT = "event";
     public static final String PARAM_SIGNATURE = "signature";
-    public static final String PARAM_PUBLIC_KEY = "public key";
+    public static final String PARAM_PUBLIC_KEY = "publickey";
+    public static final String PARAM_PLAINTEXT = "plaintext";
+    public static final String PARAM_CIPHERTEXT = "ciphertext";
 
     @NotNull
     private String name;

@@ -27,7 +27,7 @@ public class Request {
     @Column(name = "initiator", nullable = false, length = Integer.MAX_VALUE)
     private String initiator;
 
-    @NotNull
+    //@NotNull
     @Column(name = "token", nullable = false, length = Integer.MAX_VALUE)
     private String token;
 
@@ -39,7 +39,7 @@ public class Request {
     @Column(name = "request_uuid", nullable = false)
     private String requestUuid;
 
-    @NotNull
+    //@NotNull
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;

@@ -9,7 +9,6 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>nostr.si4n6r</groupId>
     <artifactId>si4n6r-storage</artifactId>
 
     <dependencies>

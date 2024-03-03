@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 public class ResponseDto extends BaseDto {
 
     public static final String RESULT_ACK = "ACK";
+    public static final String RESULT_PONG = "PONG";
 
     public ResponseDto(@NotNull RequestDto request) {
         this.method = request.getMethod();

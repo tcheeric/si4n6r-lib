@@ -4,17 +4,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.java.Log;
+import nostr.api.NIP01;
 import nostr.base.PublicKey;
+import nostr.event.json.codec.BaseEventEncoder;
+import nostr.event.json.codec.GenericEventDecoder;
 import nostr.id.Identity;
-import nostr.si4n6r.model.dto.MethodDto;
-import nostr.si4n6r.model.dto.RequestDto;
-import nostr.si4n6r.model.dto.SessionDto;
+import nostr.si4n6r.model.dto.*;
 import nostr.si4n6r.rest.client.MethodRestClient;
+import nostr.si4n6r.rest.client.ParameterRestClient;
 import nostr.si4n6r.rest.client.RequestRestClient;
 import nostr.si4n6r.rest.client.SessionManager;
 import nostr.si4n6r.storage.common.ApplicationProxy;
 import org.junit.jupiter.api.*;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.logging.Level;
 
 @Log
@@ -68,14 +72,14 @@ public class SignerServiceTest {
 
         // Create the Session
         final var session = SignerServiceTest.createSession(user, app);
-        if(session == null) {
+        if (session == null) {
             throw new RuntimeException("Session not found");
         }
 
         // Get the Method
         var mClient = new MethodRestClient();
         var connectDto = mClient.getMethodById(MethodDto.MethodType.CONNECT.getId());
-        if(connectDto == null) {
+        if (connectDto == null) {
             throw new RuntimeException("Connect method not found");
         }
 
@@ -104,104 +108,163 @@ public class SignerServiceTest {
         SessionManager.getInstance().deactivateSession(app.toString());
     }
 
+
     @Test
-    @DisplayName("Handle disconnect request without connect")
-    public void handleDisconnectWithoutConnect() {
-/*
+    @DisplayName("Handle the get_public_key method request")
+    public void handleGetPublicKey() throws JsonProcessingException {
         this.app = Identity.generateRandomIdentity().getPublicKey();
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        //final var applicationProxy = createApplicationProxy("handleDisconnect", app);
-        var session = SignerServiceTest.createSession(user, app);
+        // Create the Session
+        final var session = SignerServiceTest.createSession(user, app);
+        if (session == null) {
+            throw new RuntimeException("Session not found");
+        }
 
-        // You cannot disconnect without having connected first
-        final var request = new Request<>(new Disconnect(app), session.getJwtToken());
-        request.setInitiator(new ApplicationProxy(app));
-        assertThrows(RuntimeException.class, () -> this.signerService.handle(request));
-*/
+        // Get the Method
+        var mClient = new MethodRestClient();
+        var connectDto = mClient.getMethodById(MethodDto.MethodType.CONNECT.getId());
+        if (connectDto == null) {
+            throw new RuntimeException("Connect method not found");
+        }
+
+        // Create the Request
+        var request = new RequestDto();
+        request.setMethod(connectDto);
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
+        var rqclient = new RequestRestClient();
+        log.log(Level.INFO, ">>>> Creating Request: {0}", request);
+        var requestDto = rqclient.create(request);
+
+        // Handle the connect method request
+        var response = this.signerService.handle(requestDto);
+
+        var getPublicKeyDto = mClient.getMethodById(MethodDto.MethodType.GET_PUBLIC_KEY.getId());
+        if (getPublicKeyDto == null) {
+            throw new RuntimeException("get_public_key method not found");
+        }
+
+        request = new RequestDto();
+        request.setMethod(getPublicKeyDto);
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
+        rqclient = new RequestRestClient();
+        log.log(Level.INFO, ">>>> Creating Request: {0}", request);
+        requestDto = rqclient.create(request);
+
+        // Handle the connect method request
+        response = this.signerService.handle(requestDto);
+
+        // Check the result
+        var om = new ObjectMapper();
+        var result = om.readValue(response.getResult(), SignerService.Result.class);
+        Assertions.assertEquals(this.user.toString(), result.getValue());
     }
 
     @Test
-    @DisplayName("Handle disconnect request")
-    public void handleDisconnect() {
-/*
+    @DisplayName("Handle the ping method request")
+    public void handlePing() throws JsonProcessingException {
         this.app = Identity.generateRandomIdentity().getPublicKey();
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        //final var applicationProxy = createApplicationProxy("handleDisconnect", app);
-        var session = SignerServiceTest.createSession(user, app);
 
-        var request = new Request<>(new Connect(app), session.getJwtToken());
-        request.setInitiator(new ApplicationProxy(app));
-        this.signerService.handle(request);
+        // Get the Method
+        var mClient = new MethodRestClient();
+        var pingDto = mClient.getMethodById(MethodDto.MethodType.PING.getId());
+        if (pingDto == null) {
+            throw new RuntimeException("Connect method not found");
+        }
 
-        request = new Request<>(new Disconnect(app), session.getJwtToken());
-        request.setInitiator(new ApplicationProxy(app));
-        this.signerService.handle(request);
+        // Create the Request
+        var request = new RequestDto();
+        request.setMethod(pingDto);
+        request.setInitiator(app.toString());
+        var rqclient = new RequestRestClient();
+        log.log(Level.INFO, ">>>> Creating Request: {0}", request);
+        var requestDto = rqclient.create(request);
 
-        assertEquals("ACK", request.getMethod().getResult());
-        assertTrue(this.signerService.getSessionManager().sessionIsInactive(app));
-*/
+        // Handle the connect method request
+        var response = this.signerService.handle(requestDto);
+
+        // Check the result
+        var om = new ObjectMapper();
+        var result = om.readValue(response.getResult(), SignerService.Result.class);
+        Assertions.assertEquals(ResponseDto.RESULT_PONG, result.getValue());
     }
 
     @Test
-    @DisplayName("Handle describe request")
-    public void handleDescribe() {
-/*
+    @DisplayName("Handle the sign_event method request")
+    public void testSignEvent() throws JsonProcessingException {
         this.app = Identity.generateRandomIdentity().getPublicKey();
         this.user = Identity.generateRandomIdentity().getPublicKey();
 
-        var session = SignerServiceTest.createSession(user, app);
+        // Create the Session
+        final var session = SignerServiceTest.createSession(user, app);
+        if (session == null) {
+            throw new RuntimeException("Session not found");
+        }
 
-        var request = new Request<>(new Connect(app), session.getJwtToken());
-        request.setInitiator(new ApplicationProxy(app));
-        this.signerService.handle(request);
+        // Get the Method
+        var mClient = new MethodRestClient();
+        var connectDto = mClient.getMethodById(MethodDto.MethodType.CONNECT.getId());
+        if (connectDto == null) {
+            throw new RuntimeException("Connect method not found");
+        }
 
+        // Create the Request
+        var request = new RequestDto();
+        request.setMethod(connectDto);
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
 
-        var requestDescribe = new Request<>(new Describe(), session.getJwtToken());
-        requestDescribe.setInitiator(new ApplicationProxy(app));
-        this.signerService.handle(requestDescribe);
+        var rqclient = new RequestRestClient();
+        log.log(Level.INFO, ">>>> Creating Request: {0}", request);
+        var requestDto = rqclient.create(request);
 
-        var result = requestDescribe.getMethod().getResult();
-        assertEquals(3, result.size());
-        assertTrue(result.contains(IMethod.Constants.METHOD_CONNECT));
-        assertTrue(result.contains(IMethod.Constants.METHOD_DISCONNECT));
-        assertTrue(result.contains(IMethod.Constants.METHOD_DESCRIBE));
-*/
-    }
+        // Handle the connect method request
+        var response = this.signerService.handle(requestDto);
 
-    @Test
-    @DisplayName("Deactivate an active session")
-    public void deactivateSession() {
-/*
-        this.app = Identity.generateRandomIdentity().getPublicKey();
-        this.user = Identity.generateRandomIdentity().getPublicKey();
+        var signEventDto = mClient.getMethodById(MethodDto.MethodType.SIGN_EVENT.getId());
+        if (signEventDto == null) {
+            throw new RuntimeException("sign_event method not found");
+        }
 
-        var session = SignerServiceTest.createSession(user, app);
+        request = new RequestDto();
+        request.setMethod(signEventDto);
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
 
-        var request = new Request<>(new Connect(app), session.getJwtToken());
-        request.setInitiator(new ApplicationProxy(app));
-        this.signerService.handle(request);
+        rqclient = new RequestRestClient();
+        log.log(Level.INFO, ">>>> Creating Request: {0}", request);
+        requestDto = rqclient.create(request);
 
-        session = SessionManager.getInstance().getSession(app);
-        assertFalse(session.hasExpired());
+        var event = NIP01.createTextNoteEvent("Hello World, #si4n6r");
+        var strEvent = new BaseEventEncoder(event).encode();
 
-        SessionManager.getInstance().deactivateSession(app);
-        assertTrue(SessionManager.getInstance().sessionIsInactive(app));
-*/
-    }
+        var parameter = new ParameterDto();
+        parameter.setRequest(requestDto);
+        parameter.setName(ParameterDto.PARAM_EVENT);
+        parameter.setValue(Base64.getEncoder().encodeToString(strEvent.getBytes(StandardCharsets.UTF_8)));
 
-    @Test
-    @DisplayName("Handle describe request without connect")
-    public void handleDescribeWithoutConnect() {
-/*
-        this.app = Identity.generateRandomIdentity().getPublicKey();
-        this.user = Identity.generateRandomIdentity().getPublicKey();
+        var paramClient = new ParameterRestClient();
+        log.log(Level.INFO, ">>> Creating parameter {0}", parameter);
+        paramClient.create(parameter);
 
-        var session = SignerServiceTest.createSession(user, app);
-        var request = new Request<>(new Describe(), session.getJwtToken());
-        request.setInitiator(new ApplicationProxy(app));
-*/
+        // Handle the connect method request
+        response = this.signerService.handle(requestDto);
+
+        // Check the result
+        var om = new ObjectMapper();
+        var result = om.readValue(response.getResult(), SignerService.Result.class);
+        var strSignedEvent = result.getValue();
+        var decoder = new GenericEventDecoder(new String(Base64.getDecoder().decode(strSignedEvent), StandardCharsets.UTF_8));
+        var signedEvent = decoder.decode();
+        Assertions.assertNotNull(signedEvent.getSignature());
     }
 
     private ApplicationProxy createApplicationProxy(@NonNull String name, @NonNull PublicKey publicKey) {
@@ -211,7 +274,7 @@ public class SignerServiceTest {
     }
 
     private static SessionDto createSession(@NonNull PublicKey user, @NonNull PublicKey app) {
-        return SessionManager.getInstance().createSession(user.toString(), app.toString(), 20 * 60, "password");
+        return SessionManager.getInstance().createSession("test@badgr.space", user.toString(), app.toString(), 20 * 60, "password");
     }
 
     private static SessionDto getSessionDto(SessionDto expectedEntity) {
