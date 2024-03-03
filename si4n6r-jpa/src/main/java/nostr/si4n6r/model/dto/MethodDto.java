@@ -15,7 +15,8 @@ public class MethodDto extends BaseDto {
     @Getter
     public enum MethodType {
         CONNECT("connect", 1L),
-        DISCONNECT("disconnect", 12L),
+        DISCONNECT("disconnect", 11L),
+        DESCRIBE("describe", 12L),
         GET_PUBLIC_KEY("get_public_key", 2L),
         SIGN_EVENT("sign_event", 3L),
         PING("ping", 10L),
