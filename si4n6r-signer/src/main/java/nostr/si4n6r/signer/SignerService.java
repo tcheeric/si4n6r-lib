@@ -27,6 +27,7 @@ import nostr.si4n6r.storage.fs.NostrAccountFSVault;
 import nostr.si4n6r.util.JWTUtil;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
@@ -106,7 +107,7 @@ public class SignerService {
             request = requestRestClient.create(request);
         }
 
-        // Ping requests do not need a session
+        // Some requests do not need a session (ping, create_session)
         if (request.getSession() != null) {
             validateSession(request);
         }
@@ -207,6 +208,21 @@ public class SignerService {
                         new PublicKey(request.getInitiator())
                 );
             }
+/*
+            case "create_account" -> {
+                var result = doCreateAccount(request);
+                response = new ResponseDto(request);
+                response.setResult(Result.toJson(result));
+                var restClient = new ResponseRestClient();
+                response = restClient.create(response);
+
+                event = NIP46.createResponseEvent(
+                        toResponse(response),
+                        sender,
+                        new PublicKey(request.getInitiator())
+                );
+            }
+*/
             case "nip04_encrypt" -> {
                 var result = doGetNip04Encrypt(request);
                 response = new ResponseDto(request);
@@ -277,15 +293,75 @@ public class SignerService {
         return response;
     }
 
-    private Result doGetNip44Decrypt(RequestDto request) {
+/*
+    private Result doCreateAccount(@NonNull RequestDto request) {
+        log.log(Level.INFO, "Create account: {0}", request);
+        var client = new ParameterRestClient();
+        var params = client.getParametersByRequest(request);
+        var paramName = params.stream()
+                .filter(Objects::nonNull)
+                .filter(p -> p.getName().equals(ParameterDto.PARAM_NAME))
+                .findFirst();
+        var paramPassword = params.stream()
+                .filter(Objects::nonNull)
+                .filter(p -> p.getName().equals(ParameterDto.PARAM_PASSWORD))
+                .findFirst();
+        var paramRelays = params.stream()
+                .filter(Objects::nonNull)
+                .filter(p -> p.getName().equals(ParameterDto.PARAM_RELAYS))
+                .findFirst();
+
+        if (paramName.isPresent() && paramPassword.isPresent()) {
+            var name = paramName.get().getValue();
+            var password = paramPassword.get().getValue();
+            var relays = paramRelays.isPresent() ? paramRelays.get().getValue() : "";
+
+            var identity = Identity.generateRandomIdentity();
+            var publicKey = identity.getPublicKey().toString();
+            var privateKey = identity.getPrivateKey().toString();
+
+            var vault = new NostrAccountFSVault();
+            vault.setPassword(password);
+
+            var account = new AccountProxy();
+            account.setId(name);
+            account.setPublicKey(publicKey);
+            account.setPrivateKey(privateKey);
+
+            if(vault.store(account)) {
+                var identityRestClient = new IdentityRestClient();
+                var relayList = Arrays.asList(relays.split(",")).stream().map(r -> new RelayDto(r, r)).toList();
+
+                var identityDto = new NostrIdentityDto();
+                identityDto.setPublicKey(publicKey);
+                identityDto.setDomain(name.split("@")[1]);
+                identityDto.setLocalpart(name.split("@")[0]);
+                identityDto.setRelays(relayList);
+
+                var identityDto1 = identityRestClient.create(identityDto);
+                var result = new Result(request.getInitiator());
+
+                result.setValue(identityDto1.toString());
+            }
+        }
+
+        return new Result();
+    }
+*/
+
+    private String getDomain(@NonNull String name) {
+        return name.split("@")[1];
+    }
+
+    private Result doGetNip44Decrypt(@NonNull RequestDto request) {
         return null;
     }
 
-    private Result doGetNip44Encrypt(RequestDto request) {
+    private Result doGetNip44Encrypt(@NonNull RequestDto request) {
         return null;
     }
 
-    private Result doGetNip04Decrypt(RequestDto request) {
+    private Result doGetNip04Decrypt(@NonNull RequestDto request) {
         log.log(Level.INFO, "Decrypting nip04: {0}", request);
         var client = new ParameterRestClient();
         var params = client.getParametersByRequest(request);
@@ -317,7 +393,7 @@ public class SignerService {
         return new Result();
     }
 
-    private Result doGetNip04Encrypt(RequestDto request) {
+    private Result doGetNip04Encrypt(@NonNull RequestDto request) {
         log.log(Level.INFO, "Encrypting nip04: {0}", request);
         var client = new ParameterRestClient();
         var params = client.getParametersByRequest(request);
@@ -349,7 +425,7 @@ public class SignerService {
         return new Result();
     }
 
-    private IEvent getEvent(String strEvent) {
+    private IEvent getEvent(@NonNull String strEvent) {
         var decodedEvent = Base64.getDecoder().decode(strEvent.getBytes(StandardCharsets.UTF_8));
         var decoder = new GenericEventDecoder(new String(decodedEvent, StandardCharsets.UTF_8));
         return decoder.decode();
@@ -381,7 +457,7 @@ public class SignerService {
         }
     }
 
-    private Result doDescribe(String app) {
+    private Result doDescribe(@NonNull String app) {
         // Get all method types from the MethodDto.MethodType enum
         List<String> methodList = Arrays.stream(MethodDto.MethodType.values())
                 .map(Enum::name)
@@ -430,23 +506,40 @@ public class SignerService {
     }
 
     private Set<String> getRelays(@NonNull String nip05) {
-        var restTemplate = new RestTemplate();
-        String url = "http://localhost:8080/bottin/" + nip05;
+        var local = nip05.split("@")[0];
+        var domain = nip05.split("@")[1];
+        String url = "http://localhost:8080/bottin/nip05?localpart=" + local + "&domain=" + domain;
 
         // Make a GET request and parse the response to a Map
+        var restTemplate = new RestTemplate();
         Map<String, Object> response = restTemplate.getForObject(url, Map.class);
 
+        log.log(Level.INFO, "Relays response: {0}", response);
+
         // Extract the "relays" object
-        Map<String, List<String>> relays = (Map<String, List<String>>) response.get("relays");
+        var tmpResp = Base64.getDecoder().decode(response.get("result").toString());
+        var objectMapper = new ObjectMapper();
+        Map<String, Object> responseMap;
+        try {
+            responseMap = objectMapper.readValue(tmpResp, Map.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Extract the "relays" object
+        Map<String, List<String>> relays = (Map<String, List<String>>) responseMap.get("relays");
+
+        log.log(Level.INFO, "Relays: {0}", relays);
 
         // Create a set to store the relay URLs
         Set<String> relayUrls = new HashSet<>();
 
         // Iterate over the "relays" object and add all the relay URLs to the set
-        for (List<String> urls : relays.values()) {
-            relayUrls.addAll(urls);
+        if (relays != null) {
+            for (List<String> urls : relays.values()) {
+                relayUrls.addAll(urls);
+            }
         }
-
         return relayUrls;
     }
 

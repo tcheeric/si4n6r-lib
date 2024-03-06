@@ -23,6 +23,16 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>nostr.si4n6r</groupId>
+            <artifactId>bottin-rest-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>nostr.si4n6r</groupId>
+            <artifactId>bottin-jpa</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>nostr-java</groupId>
             <artifactId>nostr-java-api</artifactId>
             <version>${nostr-java.version}</version>

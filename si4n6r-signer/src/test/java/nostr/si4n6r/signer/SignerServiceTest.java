@@ -9,7 +9,11 @@ import nostr.base.PublicKey;
 import nostr.event.json.codec.BaseEventEncoder;
 import nostr.event.json.codec.GenericEventDecoder;
 import nostr.id.Identity;
-import nostr.si4n6r.model.dto.*;
+import nostr.si4n6r.model.dto.MethodDto;
+import nostr.si4n6r.model.dto.ParameterDto;
+import nostr.si4n6r.model.dto.RequestDto;
+import nostr.si4n6r.model.dto.ResponseDto;
+import nostr.si4n6r.model.dto.SessionDto;
 import nostr.si4n6r.rest.client.MethodRestClient;
 import nostr.si4n6r.rest.client.ParameterRestClient;
 import nostr.si4n6r.rest.client.RequestRestClient;
@@ -18,8 +22,13 @@ import nostr.si4n6r.storage.common.ApplicationProxy;
 import org.junit.jupiter.api.*;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.logging.Level;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Log
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -99,7 +108,7 @@ public class SignerServiceTest {
         // Check the result
         var om = new ObjectMapper();
         var result = om.readValue(response.getResult(), SignerService.Result.class);
-        Assertions.assertEquals("ACK", result.getValue());
+        assertEquals("ACK", result.getValue());
         Assertions.assertTrue(this.signerService.getSessionManager().sessionIsActive(app.toString()));
 
         // You cannot connectMethod twice
@@ -161,7 +170,7 @@ public class SignerServiceTest {
         // Check the result
         var om = new ObjectMapper();
         var result = om.readValue(response.getResult(), SignerService.Result.class);
-        Assertions.assertEquals(this.user.toString(), result.getValue());
+        assertEquals(this.user.toString(), result.getValue());
     }
 
     @Test
@@ -192,7 +201,7 @@ public class SignerServiceTest {
         // Check the result
         var om = new ObjectMapper();
         var result = om.readValue(response.getResult(), SignerService.Result.class);
-        Assertions.assertEquals(ResponseDto.RESULT_PONG, result.getValue());
+        assertEquals(ResponseDto.RESULT_PONG, result.getValue());
     }
 
     @Test
@@ -267,6 +276,66 @@ public class SignerServiceTest {
         Assertions.assertNotNull(signedEvent.getSignature());
     }
 
+    @Test
+    @DisplayName("Handle the get_relays method request")
+    public void testGetRelays() throws JsonProcessingException {
+        this.app = Identity.generateRandomIdentity().getPublicKey();
+        this.user = Identity.generateRandomIdentity().getPublicKey();
+
+        // Create the Session
+        final var session = SignerServiceTest.createSession(user, app);
+        if (session == null) {
+            throw new RuntimeException("Session not found");
+        }
+
+        // Get the Method
+        var mClient = new MethodRestClient();
+        var connectDto = mClient.getMethodById(MethodDto.MethodType.CONNECT.getId());
+        if (connectDto == null) {
+            throw new RuntimeException("Connect method not found");
+        }
+
+        // Create the Request
+        var request = new RequestDto();
+        request.setMethod(connectDto);
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
+
+        var rqclient = new RequestRestClient();
+        log.log(Level.INFO, ">>>> Creating Request: {0}", request);
+        var requestDto = rqclient.create(request);
+
+        // Handle the connect method request
+        var response = this.signerService.handle(requestDto);
+
+        var getRelaysDto = mClient.getMethodById(MethodDto.MethodType.GET_RELAYS.getId());
+        if (getRelaysDto == null) {
+            throw new RuntimeException("get_relays method not found");
+        }
+
+        request = new RequestDto();
+        request.setMethod(getRelaysDto);
+        request.setSession(session);
+        request.setToken(session.getToken());
+        request.setInitiator(app.toString());
+
+        rqclient = new RequestRestClient();
+        log.log(Level.INFO, ">>>> Creating Request: {0}", request);
+        requestDto = rqclient.create(request);
+
+        // Handle the connect method request
+        response = this.signerService.handle(requestDto);
+
+        // Check the result
+        var om = new ObjectMapper();
+        var result = om.readValue(response.getResult(), SignerService.Result.class);
+        var strRelays = result.getValue();
+        List<String> relays = Arrays.stream(strRelays.split(",")).toList();
+        assertEquals(1, relays.size());
+        assertTrue(relays.contains("wss://relay.badgr.space"));
+    }
+
     private ApplicationProxy createApplicationProxy(@NonNull String name, @NonNull PublicKey publicKey) {
         var result = new ApplicationProxy(publicKey);
         result.setName(name);
@@ -274,7 +343,7 @@ public class SignerServiceTest {
     }
 
     private static SessionDto createSession(@NonNull PublicKey user, @NonNull PublicKey app) {
-        return SessionManager.getInstance().createSession("test@badgr.space", user.toString(), app.toString(), 20 * 60, "password");
+        return SessionManager.getInstance().createSession("bnnbn@badgr.space", user.toString(), app.toString(), 20 * 60, "password");
     }
 
     private static SessionDto getSessionDto(SessionDto expectedEntity) {

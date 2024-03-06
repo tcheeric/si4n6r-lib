@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import nostr.si4n6r.model.dto.RequestDto;
 
 /**
  * DTO for {@link nostr.si4n6r.model.Parameter}
@@ -21,6 +20,9 @@ public class ParameterDto extends BaseDto {
     public static final String PARAM_PUBLIC_KEY = "publickey";
     public static final String PARAM_PLAINTEXT = "plaintext";
     public static final String PARAM_CIPHERTEXT = "ciphertext";
+    public static final String PARAM_NAME = "name";
+    public static final String PARAM_PASSWORD = "password";
+    public static final String PARAM_RELAYS = "relays";
 
     @NotNull
     private String name;
