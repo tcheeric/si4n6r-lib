@@ -37,16 +37,10 @@ public class SignerServiceTest {
     private SignerService signerService;
     private PublicKey app;
     private PublicKey user;
-    //private SessionRestClient restClient;
-    //private RestTemplate restTemplate;
 
     @BeforeAll
     public void setUp() {
-        //MockitoAnnotations.openMocks(this);
         this.signerService = SignerService.getInstance();
-        //this.restClient = new SessionRestClient();
-        //this.restTemplate = new RestTemplate();
-        //this.restClient.setRestTemplate(restTemplate);
 
     }
 

@@ -205,8 +205,6 @@ public class SignerService {
         return createResponse(request, result, sender);
     }
 
-    // ... similar methods for each case ...
-
     private ResponseDto createResponse(RequestDto request, Result result, IIdentity sender) {
         var response = new ResponseDto(request);
         response.setResult(Result.toJson(result));
