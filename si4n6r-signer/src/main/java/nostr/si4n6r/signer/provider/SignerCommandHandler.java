@@ -70,9 +70,7 @@ public class SignerCommandHandler implements ICommandHandler {
         log.log(Level.FINE, "Recipient: {0} - Signer: {1}", new Object[]{recipient, signer.getIdentity().getPublicKey()});
         if (event.getKind() == 24133 && recipient.equals(signer.getIdentity().getPublicKey())) {
             handleKind24133(event, signer, app);
-        } /*else if (event.getKind() == 4) {
-            handleKind4(event, signer);
-        } */ else {
+        } else {
             log.log(Level.FINE, "Skipping event {0} with nip {1}. All fine!", new Object[]{event, event.getNip()});
         }
     }

@@ -11,12 +11,21 @@ import nostr.api.NIP01;
 import nostr.api.NIP04;
 import nostr.api.NIP46;
 import nostr.api.Nostr;
-import nostr.base.*;
+import nostr.base.IEvent;
+import nostr.base.ISignable;
+import nostr.base.PrivateKey;
+import nostr.base.PublicKey;
+import nostr.base.Relay;
 import nostr.event.impl.GenericEvent;
 import nostr.event.json.codec.BaseEventEncoder;
 import nostr.event.json.codec.GenericEventDecoder;
+import nostr.id.IIdentity;
 import nostr.id.Identity;
-import nostr.si4n6r.model.dto.*;
+import nostr.si4n6r.model.dto.MethodDto;
+import nostr.si4n6r.model.dto.ParameterDto;
+import nostr.si4n6r.model.dto.RequestDto;
+import nostr.si4n6r.model.dto.ResponseDto;
+import nostr.si4n6r.model.dto.SessionDto;
 import nostr.si4n6r.rest.client.ParameterRestClient;
 import nostr.si4n6r.rest.client.RequestRestClient;
 import nostr.si4n6r.rest.client.ResponseRestClient;
@@ -29,7 +38,13 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -96,8 +111,7 @@ public class SignerService {
      * @param request the request to handle and respond to.
      */
     public ResponseDto handle(@NonNull RequestDto request) {
-
-        var method = request.getMethod();
+        var method = request.getMethod().getName();
         var app = request.getInitiator();
 
         log.log(Level.INFO, "Handling {0}", request);
@@ -112,179 +126,98 @@ public class SignerService {
             validateSession(request);
         }
 
-        GenericEvent event;
         ResponseDto response;
         var sender = signer.getIdentity();
 
-        switch (method.getName()) {
-            case "describe" -> {
-                var result = doDescribe(app);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
-            case "disconnect" -> {
-                var result = doDisconnect(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(app)
-                );
-            }
-            case "connect" -> {
-                var result = doConnect(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(app)
-                );
-            }
-            case "get_public_key" -> {
-                var result = doGetPublicKey(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
-            case "sign_event" -> {
-                var result = doSignEvent(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
-            case "ping" -> {
-                var result = doPing(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
-            case "get_relays" -> {
-                var result = doGetRelays(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
-/*
-            case "create_account" -> {
-                var result = doCreateAccount(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
-*/
-            case "nip04_encrypt" -> {
-                var result = doGetNip04Encrypt(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
-            case "nip04_decrypt" -> {
-                var result = doGetNip04Decrypt(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
-            case "nip44_encrypt" -> {
-                var result = doGetNip44Encrypt(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-
-            }
-            case "nip44_decrypt" -> {
-                var result = doGetNip44Decrypt(request);
-                response = new ResponseDto(request);
-                response.setResult(Result.toJson(result));
-                var restClient = new ResponseRestClient();
-                response = restClient.create(response);
-
-                event = NIP46.createResponseEvent(
-                        toResponse(response),
-                        sender,
-                        new PublicKey(request.getInitiator())
-                );
-            }
+        switch (method) {
+            case "describe" -> response = handleDescribe(request, sender);
+            case "disconnect" -> response = handleDisconnect(request, sender);
+            case "connect" -> response = handleConnect(request, sender);
+            case "get_public_key" -> response = handleGetPublicKey(request, sender);
+            case "sign_event" -> response = handleSignEvent(request, sender);
+            case "ping" -> response = handlePing(request, sender);
+            case "get_relays" -> response = handleGetRelays(request, sender);
+            case "nip04_encrypt" -> response = handleNip04Encrypt(request, sender);
+            case "nip04_decrypt" -> response = handleNip04Decrypt(request, sender);
+            case "nip44_encrypt" -> response = handleNip44Encrypt(request, sender);
+            case "nip44_decrypt" -> response = handleNip44Decrypt(request, sender);
             default -> throw new RuntimeException("Invalid request: " + request);
-        }
-
-        if (event == null) {
-            throw new RuntimeException("Invalid request: " + request);
         }
 
         sessionManager.addResponse(response, app);
         sessionManager.addRequest(request, app);
+
+        return response;
+    }
+
+    private ResponseDto handleNip44Decrypt(RequestDto request, IIdentity sender) {
+        var result = doGetNip44Decrypt(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleNip44Encrypt(RequestDto request, IIdentity sender) {
+        var result = doGetNip44Encrypt(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleNip04Decrypt(RequestDto request, IIdentity sender) {
+        var result = doGetNip04Decrypt(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleNip04Encrypt(RequestDto request, IIdentity sender) {
+        var result = doGetNip04Encrypt(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleGetRelays(RequestDto request, IIdentity sender) {
+        var result = doGetRelays(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handlePing(RequestDto request, IIdentity sender) {
+        var result = doPing(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleSignEvent(RequestDto request, IIdentity sender) {
+        var result = doSignEvent(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleGetPublicKey(RequestDto request, IIdentity sender) {
+        var result = doGetPublicKey(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleConnect(RequestDto request, IIdentity sender) {
+        var result = doConnect(request);
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleDescribe(RequestDto request, IIdentity sender) {
+        var result = doDescribe(request.getInitiator());
+        return createResponse(request, result, sender);
+    }
+
+    private ResponseDto handleDisconnect(RequestDto request, IIdentity sender) {
+        var result = doDisconnect(request);
+        return createResponse(request, result, sender);
+    }
+
+    // ... similar methods for each case ...
+
+    private ResponseDto createResponse(RequestDto request, Result result, IIdentity sender) {
+        var response = new ResponseDto(request);
+        response.setResult(Result.toJson(result));
+        var restClient = new ResponseRestClient();
+        response = restClient.create(response);
+
+        var event = NIP46.createResponseEvent(
+                toResponse(response),
+                sender,
+                new PublicKey(request.getInitiator())
+        );
 
         log.log(Level.FINE, "Submitting event {0} to relay(s)", event);
         Nostr.sign(sender, event);
@@ -292,62 +225,6 @@ public class SignerService {
 
         return response;
     }
-
-/*
-    private Result doCreateAccount(@NonNull RequestDto request) {
-        log.log(Level.INFO, "Create account: {0}", request);
-        var client = new ParameterRestClient();
-        var params = client.getParametersByRequest(request);
-        var paramName = params.stream()
-                .filter(Objects::nonNull)
-                .filter(p -> p.getName().equals(ParameterDto.PARAM_NAME))
-                .findFirst();
-        var paramPassword = params.stream()
-                .filter(Objects::nonNull)
-                .filter(p -> p.getName().equals(ParameterDto.PARAM_PASSWORD))
-                .findFirst();
-        var paramRelays = params.stream()
-                .filter(Objects::nonNull)
-                .filter(p -> p.getName().equals(ParameterDto.PARAM_RELAYS))
-                .findFirst();
-
-        if (paramName.isPresent() && paramPassword.isPresent()) {
-            var name = paramName.get().getValue();
-            var password = paramPassword.get().getValue();
-            var relays = paramRelays.isPresent() ? paramRelays.get().getValue() : "";
-
-            var identity = Identity.generateRandomIdentity();
-            var publicKey = identity.getPublicKey().toString();
-            var privateKey = identity.getPrivateKey().toString();
-
-            var vault = new NostrAccountFSVault();
-            vault.setPassword(password);
-
-            var account = new AccountProxy();
-            account.setId(name);
-            account.setPublicKey(publicKey);
-            account.setPrivateKey(privateKey);
-
-            if(vault.store(account)) {
-                var identityRestClient = new IdentityRestClient();
-                var relayList = Arrays.asList(relays.split(",")).stream().map(r -> new RelayDto(r, r)).toList();
-
-                var identityDto = new NostrIdentityDto();
-                identityDto.setPublicKey(publicKey);
-                identityDto.setDomain(name.split("@")[1]);
-                identityDto.setLocalpart(name.split("@")[0]);
-                identityDto.setRelays(relayList);
-
-                var identityDto1 = identityRestClient.create(identityDto);
-                var result = new Result(request.getInitiator());
-
-                result.setValue(identityDto1.toString());
-            }
-        }
-
-        return new Result();
-    }
-*/
 
     private String getDomain(@NonNull String name) {
         return name.split("@")[1];
@@ -506,9 +383,7 @@ public class SignerService {
     }
 
     private Set<String> getRelays(@NonNull String nip05) {
-        var local = nip05.split("@")[0];
-        var domain = nip05.split("@")[1];
-        String url = "http://localhost:8080/bottin/nip05?localpart=" + local + "&domain=" + domain;
+        String url = createUrl(nip05);
 
         // Make a GET request and parse the response to a Map
         var restTemplate = new RestTemplate();
@@ -541,6 +416,12 @@ public class SignerService {
             }
         }
         return relayUrls;
+    }
+
+    private String createUrl(@NonNull String nip05) {
+        var local = nip05.split("@")[0];
+        var domain = nip05.split("@")[1];
+        return "http://localhost:8080/bottin/nip05?localpart=" + local + "&domain=" + domain;
     }
 
     private Result doSignEvent(@NonNull RequestDto requestDto) {
